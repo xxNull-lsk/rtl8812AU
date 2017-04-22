@@ -1873,7 +1873,16 @@ void rtw_cfg80211_indicate_scan_done(_adapter *adapter, bool aborted)
 		if (pwdev_priv->scan_request->wiphy != pwdev_priv->rtw_wdev->wiphy)
 			RTW_INFO("error wiphy compare\n");
 		else
+		{
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0))
+			struct cfg80211_scan_info info = {
+				.aborted = aborted,
+			};
+			cfg80211_scan_done(pwdev_priv->scan_request, &info);
+#else
 			cfg80211_scan_done(pwdev_priv->scan_request, aborted);
+#endif
+		}
 
 		pwdev_priv->scan_request = NULL;
 	} else {
