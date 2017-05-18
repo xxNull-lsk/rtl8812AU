@@ -40,6 +40,18 @@ Kernel 3.16.x~4.4.x
 # sudo modpro -a 8812au
 ```
 
+## DKMS
+Source in:
+/usr/src/rtl8812au-5.1.5
+
+To install:
+``` sh
+dkms add -m rtl8812au -v 5.1.5
+dkms build rtl8812au/5.1.5 
+dkms install rtl8812au/5.1.5 --all
+depmod
+modprobe rtl8812au
+```
 ## Something else
 Maybe you should install some packet to build it.
 ``` sh
