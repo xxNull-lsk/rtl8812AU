@@ -22,6 +22,7 @@ This list is from the source USB IDS
 + Phlanex Abocom
 + Abocom Abocom
 + D-Link Cameo
++ Tp-Link Archer T4U v1, T4U v2 y T4UH V1
 
 This List is from WebSite:
 + D-Link DWA-182
