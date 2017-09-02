@@ -44,7 +44,6 @@
 	/* #define CONFIG_DEBUG_CFG80211 */
 	/* #define CONFIG_DRV_ISSUE_PROV_REQ */ /* IOT FOR S2 */
 	#define CONFIG_SET_SCAN_DENY_TIMER
-	/*#define SUPPLICANT_RTK_VERSION_LOWER_THAN_JB42*/ /* wpa_supplicant realtek version <= jb42 will be defined this */
 #endif
 
 /*
@@ -101,17 +100,27 @@
 	#ifdef CONFIG_IPS
 	/* #define CONFIG_IPS_LEVEL_2	1 */ /* enable this to set default IPS mode to IPS_LEVEL_2	 */
 	#define CONFIG_IPS_CHECK_IN_WD /* Do IPS Check in WatchDog.	 */
+	#ifdef CONFIG_PNO_SUPPORT
+		#define CONFIG_FWLPS_IN_IPS /* issue H2C command to let FW do LPS when entering IPS */
+	#endif /* CONFIG_PNO_SUPPORT */
 	#endif
 	/* #define SUPPORT_HW_RFOFF_DETECTED	1 */
 
 	#define CONFIG_LPS	1
-	#if defined(CONFIG_LPS) && defined(CONFIG_SUPPORT_USB_INT)
-	/* #define CONFIG_LPS_LCLK	1 */
+	#if defined(CONFIG_LPS)
+		/* #define CONFIG_LPS_LCLK	1 */
 	#endif
 
 	#ifdef CONFIG_LPS_LCLK
-	#define CONFIG_XMIT_THREAD_MODE
-	#endif
+		#ifdef CONFIG_POWER_SAVING
+			#define CONFIG_XMIT_THREAD_MODE
+		#endif /* CONFIG_POWER_SAVING */
+		#ifndef CONFIG_SUPPORT_USB_INT
+			#define LPS_RPWM_WAIT_MS 300
+			#define CONFIG_DETECT_CPWM_BY_POLLING
+		#endif /* !CONFIG_SUPPORT_USB_INT */
+		/* #define DBG_CHECK_FW_PS_STATE */
+	#endif /* CONFIG_LPS_LCLK */
 
 	/*#define CONFIG_ANTENNA_DIVERSITY*/
 

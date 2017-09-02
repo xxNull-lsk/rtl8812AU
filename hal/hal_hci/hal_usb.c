@@ -28,11 +28,6 @@ int	usb_init_recv_priv(_adapter *padapter, u16 ini_in_buf_sz)
 	int	i, res = _SUCCESS;
 	struct recv_buf *precvbuf;
 
-#ifdef CONFIG_RECV_THREAD_MODE
-	_rtw_init_sema(&precvpriv->recv_sema, 0);/* will be removed */
-	_rtw_init_sema(&precvpriv->terminate_recvthread_sema, 0);/* will be removed */
-#endif /* CONFIG_RECV_THREAD_MODE */
-
 #ifdef PLATFORM_LINUX
 	tasklet_init(&precvpriv->recv_tasklet,
 		     (void(*)(unsigned long))usb_recv_tasklet,
@@ -230,6 +225,42 @@ void usb_free_recv_priv(_adapter *padapter, u16 ini_in_buf_sz)
 
 #endif /* PLATFORM_FREEBSD */
 }
+
+#ifdef CONFIG_FW_C2H_REG
+void usb_c2h_hisr_hdl(_adapter *adapter, u8 *buf)
+{
+	u8 *c2h_evt = buf;
+	u8 id, seq, plen;
+	u8 *payload;
+
+	if (rtw_hal_c2h_reg_hdr_parse(adapter, buf, &id, &seq, &plen, &payload) != _SUCCESS)
+		return;
+
+	if (0)
+		RTW_PRINT("%s C2H == %d\n", __func__, id);
+
+	if (rtw_hal_c2h_id_handle_directly(adapter, id, seq, plen, payload)) {
+		/* Handle directly */
+		rtw_hal_c2h_handler(adapter, id, seq, plen, payload);
+
+		/* Replace with special pointer to trigger c2h_evt_clear only */
+		if (rtw_cbuf_push(adapter->evtpriv.c2h_queue, (void*)&adapter->evtpriv) != _SUCCESS)
+			RTW_ERR("%s rtw_cbuf_push fail\n", __func__);
+	} else {
+		c2h_evt = rtw_malloc(C2H_REG_LEN);
+		if (c2h_evt != NULL) {
+			_rtw_memcpy(c2h_evt, buf, C2H_REG_LEN);
+			if (rtw_cbuf_push(adapter->evtpriv.c2h_queue, (void*)c2h_evt) != _SUCCESS)
+				RTW_ERR("%s rtw_cbuf_push fail\n", __func__);
+		} else {
+			/* Error handling for malloc fail */
+			if (rtw_cbuf_push(adapter->evtpriv.c2h_queue, (void*)NULL) != _SUCCESS)
+				RTW_ERR("%s rtw_cbuf_push fail\n", __func__);
+		}
+	}
+	_set_workitem(&adapter->evtpriv.c2h_wk);
+}
+#endif
 
 #ifdef CONFIG_USB_SUPPORT_ASYNC_VDN_REQ
 int usb_write_async(struct usb_device *udev, u32 addr, void *pdata, u16 len)

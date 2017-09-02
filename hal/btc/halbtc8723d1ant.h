@@ -6,6 +6,7 @@
 /* *******************************************
  * The following is for 8723D 1ANT BT Co-exist definition
  * ******************************************* */
+#define	BT_8723D_1ANT_COEX_DBG					0
 #define	BT_AUTO_REPORT_ONLY_8723D_1ANT				1
 
 #define	BT_INFO_8723D_1ANT_B_FTP						BIT(7)
@@ -23,6 +24,8 @@
 #define	BTC_RSSI_COEX_THRESH_TOL_8723D_1ANT		2
 
 #define  BT_8723D_1ANT_WIFI_NOISY_THRESH							30   /* max: 255 */
+#define  BT_8723D_1ANT_DEFAULT_ISOLATION						15	 /*  unit: dB */
+
 
 /* for Antenna detection */
 #define	BT_8723D_1ANT_ANTDET_PSDTHRES_BACKGROUND					50
@@ -30,11 +33,11 @@
 #define	BT_8723D_1ANT_ANTDET_PSDTHRES_2ANT_GOODISOLATION			55
 #define	BT_8723D_1ANT_ANTDET_PSDTHRES_1ANT							35
 #define	BT_8723D_1ANT_ANTDET_RETRY_INTERVAL							10	/* retry timer if ant det is fail, unit: second */
-#define	BT_8723D_1ANT_ANTDET_SWEEPPOINT_DELAY							40000
-#define	BT_8723D_1ANT_ANTDET_ENABLE									0
-#define	BT_8723D_1ANT_ANTDET_COEXMECHANISMSWITCH_ENABLE				0
+#define	BT_8723D_1ANT_ANTDET_SWEEPPOINT_DELAY							60000
+#define	BT_8723D_1ANT_ANTDET_ENABLE									1
 #define	BT_8723D_1ANT_ANTDET_BTTXTIME									100
 #define	BT_8723D_1ANT_ANTDET_BTTXCHANNEL								39
+#define	BT_8723D_1ANT_ANTDET_PSD_SWWEEPCOUNT						50
 
 #define	BT_8723D_1ANT_LTECOEX_INDIRECTREG_ACCESS_TIMEOUT		30000
 
@@ -120,6 +123,26 @@ enum bt_8723d_1ant_coex_algo {
 	BT_8723D_1ANT_COEX_ALGO_MAX				= 0xb,
 };
 
+enum bt_8723d_1ant_phase {
+	BT_8723D_1ANT_PHASE_COEX_INIT								= 0x0,
+	BT_8723D_1ANT_PHASE_WLANONLY_INIT							= 0x1,
+	BT_8723D_1ANT_PHASE_WLAN_OFF								= 0x2,
+	BT_8723D_1ANT_PHASE_2G_RUNTIME								= 0x3,
+	BT_8723D_1ANT_PHASE_5G_RUNTIME								= 0x4,
+	BT_8723D_1ANT_PHASE_BTMPMODE								= 0x5,
+	BT_8723D_1ANT_PHASE_ANTENNA_DET								= 0x6,
+	BT_8723D_1ANT_PHASE_COEX_POWERON							= 0x7,
+	BT_8723D_1ANT_PHASE_MAX
+};
+
+enum bt_8723d_1ant_Scoreboard {
+	BT_8723D_1ANT_SCOREBOARD_ACTIVE								= BIT(0),
+	BT_8723D_1ANT_SCOREBOARD_ONOFF								= BIT(1),
+	BT_8723D_1ANT_SCOREBOARD_SCAN								= BIT(2),
+	BT_8723D_1ANT_SCOREBOARD_UNDERTEST							= BIT(3),
+	BT_8723D_1ANT_SCOREBOARD_WLBUSY								= BIT(6)
+};
+
 struct coex_dm_8723d_1ant {
 	/* hw setting */
 	u8		pre_ant_pos_type;
@@ -131,7 +154,6 @@ struct coex_dm_8723d_1ant {
 	u8		cur_ps_tdma;
 	u8		ps_tdma_para[5];
 	u8		ps_tdma_du_adj_type;
-	boolean		auto_tdma_adjust;
 	boolean		pre_ps_tdma_on;
 	boolean		cur_ps_tdma_on;
 	boolean		pre_bt_auto_report;
@@ -179,66 +201,102 @@ struct coex_dm_8723d_1ant {
 };
 
 struct coex_sta_8723d_1ant {
-	boolean					bt_disabled;
-	boolean					bt_link_exist;
-	boolean					sco_exist;
-	boolean					a2dp_exist;
-	boolean					hid_exist;
-	boolean					pan_exist;
-	boolean					bt_hi_pri_link_exist;
+	boolean				bt_disabled;
+	boolean				bt_link_exist;
+	boolean				sco_exist;
+	boolean				a2dp_exist;
+	boolean				hid_exist;
+	boolean				pan_exist;
+	boolean				bt_hi_pri_link_exist;
 	u8					num_of_profile;
 
-	boolean					under_lps;
-	boolean					under_ips;
+	boolean				under_lps;
+	boolean				under_ips;
 	u32					specific_pkt_period_cnt;
 	u32					high_priority_tx;
 	u32					high_priority_rx;
 	u32					low_priority_tx;
 	u32					low_priority_rx;
+	boolean             is_hiPri_rx_overhead;
 	s8					bt_rssi;
-	boolean					bt_tx_rx_mask;
+	boolean				bt_tx_rx_mask;
 	u8					pre_bt_rssi_state;
 	u8					pre_wifi_rssi_state[4];
-	boolean					c2h_bt_info_req_sent;
 	u8					bt_info_c2h[BT_INFO_SRC_8723D_1ANT_MAX][10];
 	u32					bt_info_c2h_cnt[BT_INFO_SRC_8723D_1ANT_MAX];
-	boolean					bt_whck_test;
-	boolean					c2h_bt_inquiry_page;
-	boolean					c2h_bt_page;				/* Add for win8.1 page out issue */
-	boolean					wifi_is_high_pri_task;		/* Add for win8.1 page out issue */
+	boolean				bt_whck_test;
+	boolean				c2h_bt_inquiry_page;
+	boolean				c2h_bt_remote_name_req;
+	boolean				c2h_bt_page;				/* Add for win8.1 page out issue */
+	boolean				wifi_is_high_pri_task;		/* Add for win8.1 page out issue */
 	u8					bt_retry_cnt;
 	u8					bt_info_ext;
+	u8					bt_info_ext2;
 	u32					pop_event_cnt;
 	u8					scan_ap_num;
 
 	u32					crc_ok_cck;
 	u32					crc_ok_11g;
 	u32					crc_ok_11n;
-	u32					crc_ok_11n_agg;
+	u32					crc_ok_11n_vht;
 
 	u32					crc_err_cck;
 	u32					crc_err_11g;
 	u32					crc_err_11n;
-	u32					crc_err_11n_agg;
+	u32					crc_err_11n_vht;
 
-	boolean					cck_lock;
-	boolean					pre_ccklock;
-	boolean					cck_ever_lock;
+	boolean				cck_lock;
+	boolean				pre_ccklock;
+	boolean				cck_ever_lock;
 	u8					coex_table_type;
 
-	boolean					force_lps_on;
-	u32					wrong_profile_notification;
+	boolean				force_lps_on;
 
-	boolean					concurrent_rx_mode_on;
+	boolean				concurrent_rx_mode_on;
 
 	u16					score_board;
+	u8					isolation_btween_wb;   /* 0~ 50 */
 
 	u8					a2dp_bit_pool;
 	u8					cut_version;
 	boolean				acl_busy;
-	boolean				wl_rf_off_on_event;
 	boolean				bt_create_connection;
-	boolean				gnt_control_by_PTA;
+
+	u32					bt_coex_supported_feature;
+	u32					bt_coex_supported_version;
+
+	u8					bt_ble_scan_type;
+	u32					bt_ble_scan_para[3];
+
+	boolean				run_time_state;
+	boolean				freeze_coexrun_by_btinfo;
+
+	boolean				is_A2DP_3M;
+	boolean				voice_over_HOGP;
+	u8                  bt_info;
+	boolean				is_autoslot;
+	u8					forbidden_slot;
+	u8					hid_busy_num;
+	u8					hid_pair_cnt;
+
+	u32					cnt_RemoteNameReq;
+	u32					cnt_setupLink;
+	u32					cnt_ReInit;
+	u32					cnt_IgnWlanAct;
+	u32					cnt_Page;
+	u32					cnt_RoleSwitch;
+
+	u16					bt_reg_vendor_ac;
+	u16					bt_reg_vendor_ae;
+
+	boolean				is_setupLink;
+	u8					wl_noisy_level;
+	u32                 gnt_error_cnt;
+
+	u8					bt_afh_map[10];
+	u8					bt_relink_downcount;
+	boolean				is_tdma_btautoslot;
+	boolean				is_tdma_btautoslot_hang;
 };
 
 #define  BT_8723D_1ANT_ANTDET_PSD_POINTS			256	/* MAX:1024 */
@@ -275,10 +333,13 @@ struct psdscan_sta_8723d_1ant {
 	u32			psd_stop_point;
 	u32			psd_max_value_point;
 	u32			psd_max_value;
+	u32			psd_max_value2;
+	u32			psd_avg_value;   /* filter loop_max_value that below BT_8723D_1ANT_ANTDET_PSDTHRES_1ANT, and average the rest*/
+	u32			psd_loop_max_value[BT_8723D_1ANT_ANTDET_PSD_SWWEEPCOUNT];  /*max value in each loop */
 	u32			psd_start_base;
 	u32			psd_avg_num;	/* 1/8/16/32 */
 	u32			psd_gen_count;
-	boolean			is_psd_running;
+	boolean			is_AntDet_running;
 	boolean			is_psd_show_max_only;
 };
 
@@ -311,6 +372,8 @@ void ex_halbtc8723d1ant_pnp_notify(IN struct btc_coexist *btcoexist,
 				   IN u8 pnp_state);
 void ex_halbtc8723d1ant_coex_dm_reset(IN struct btc_coexist *btcoexist);
 void ex_halbtc8723d1ant_periodical(IN struct btc_coexist *btcoexist);
+void ex_halbtc8723d1ant_set_antenna_notify(IN struct btc_coexist *btcoexist,
+		IN u8 type);
 void ex_halbtc8723d1ant_display_coex_info(IN struct btc_coexist *btcoexist);
 void ex_halbtc8723d1ant_antenna_detection(IN struct btc_coexist *btcoexist,
 		IN u32 cent_freq, IN u32 offset, IN u32 span, IN u32 seconds);
@@ -339,6 +402,7 @@ void ex_halbtc8723d1ant_display_ant_detection(IN struct btc_coexist *btcoexist);
 #define	ex_halbtc8723d1ant_coex_dm_reset(btcoexist)
 #define	ex_halbtc8723d1ant_periodical(btcoexist)
 #define	ex_halbtc8723d1ant_display_coex_info(btcoexist)
+#define	ex_halbtc8723d1ant_set_antenna_notify(btcoexist, type)
 #define	ex_halbtc8723d1ant_antenna_detection(btcoexist, cent_freq, offset, span, seconds)
 #define	ex_halbtc8723d1ant_antenna_isolation(btcoexist, cent_freq, offset, span, seconds)
 #define	ex_halbtc8723d1ant_psd_scan(btcoexist, cent_freq, offset, span, seconds)
@@ -346,3 +410,4 @@ void ex_halbtc8723d1ant_display_ant_detection(IN struct btc_coexist *btcoexist);
 #endif
 
 #endif
+

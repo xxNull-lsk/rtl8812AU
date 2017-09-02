@@ -291,6 +291,9 @@ void rtl8814a_fill_txdesc_phy(PADAPTER padapter, struct pkt_attrib *pattrib, u8 
 	s32 rtl8814ae_mgnt_xmit(PADAPTER padapter, struct xmit_frame *pmgntframe);
 	s32	rtl8814ae_hal_xmitframe_enqueue(_adapter *padapter, struct xmit_frame *pxmitframe);
 	void rtl8814ae_xmit_tasklet(void *priv);
+#ifdef CONFIG_XMIT_THREAD_MODE
+	s32 rtl8814ae_xmit_buf_handler(_adapter *padapter);
+#endif
 #endif
 
 void _dbg_dump_tx_info(_adapter	*padapter, int frame_tag, u8 *ptxdesc);

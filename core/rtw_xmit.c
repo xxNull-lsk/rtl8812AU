@@ -59,6 +59,21 @@ void	_rtw_init_sta_xmit_priv(struct sta_xmit_priv *psta_xmitpriv)
 
 }
 
+void rtw_init_xmit_block(_adapter *padapter)
+{
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+
+	_rtw_spinlock_init(&dvobj->xmit_block_lock);
+	dvobj->xmit_block = XMIT_BLOCK_NONE;
+
+}
+void rtw_free_xmit_block(_adapter *padapter)
+{
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+
+	_rtw_spinlock_free(&dvobj->xmit_block_lock);
+}
+
 s32	_rtw_init_xmit_priv(struct xmit_priv *pxmitpriv, _adapter *padapter)
 {
 	int i;
@@ -73,7 +88,6 @@ s32	_rtw_init_xmit_priv(struct xmit_priv *pxmitpriv, _adapter *padapter)
 	_rtw_spinlock_init(&pxmitpriv->lock);
 	_rtw_spinlock_init(&pxmitpriv->lock_sctx);
 	_rtw_init_sema(&pxmitpriv->xmit_sema, 0);
-	_rtw_init_sema(&pxmitpriv->terminate_xmitthread_sema, 0);
 
 	/*
 	Please insert all the queue initializaiton using _rtw_init_queue below
@@ -314,6 +328,29 @@ s32	_rtw_init_xmit_priv(struct xmit_priv *pxmitpriv, _adapter *padapter)
 	rtw_sctx_init(&pxmitpriv->ack_tx_ops, 0);
 #endif
 
+#ifdef CONFIG_TX_AMSDU
+	rtw_init_timer(&(pxmitpriv->amsdu_vo_timer), padapter,
+		rtw_amsdu_vo_timeout_handler, padapter);
+	pxmitpriv->amsdu_vo_timeout = RTW_AMSDU_TIMER_UNSET;
+
+	rtw_init_timer(&(pxmitpriv->amsdu_vi_timer), padapter,
+		rtw_amsdu_vi_timeout_handler, padapter);
+	pxmitpriv->amsdu_vi_timeout = RTW_AMSDU_TIMER_UNSET;
+
+	rtw_init_timer(&(pxmitpriv->amsdu_be_timer), padapter,
+		rtw_amsdu_be_timeout_handler, padapter);
+	pxmitpriv->amsdu_be_timeout = RTW_AMSDU_TIMER_UNSET;
+
+	rtw_init_timer(&(pxmitpriv->amsdu_bk_timer), padapter,
+		rtw_amsdu_bk_timeout_handler, padapter);
+	pxmitpriv->amsdu_bk_timeout = RTW_AMSDU_TIMER_UNSET;
+
+	pxmitpriv->amsdu_debug_set_timer = 0;
+	pxmitpriv->amsdu_debug_timeout = 0;
+	pxmitpriv->amsdu_debug_coalesce_one = 0;
+	pxmitpriv->amsdu_debug_coalesce_two = 0;
+#endif
+	rtw_init_xmit_block(padapter);
 	rtw_hal_init_xmit_priv(padapter);
 
 exit:
@@ -327,7 +364,6 @@ void  rtw_mfree_xmit_priv_lock(struct xmit_priv *pxmitpriv)
 {
 	_rtw_spinlock_free(&pxmitpriv->lock);
 	_rtw_free_sema(&pxmitpriv->xmit_sema);
-	_rtw_free_sema(&pxmitpriv->terminate_xmitthread_sema);
 
 	_rtw_spinlock_free(&pxmitpriv->be_pending.lock);
 	_rtw_spinlock_free(&pxmitpriv->bk_pending.lock);
@@ -413,7 +449,7 @@ void _rtw_free_xmit_priv(struct xmit_priv *pxmitpriv)
 #ifdef CONFIG_XMIT_ACK
 	_rtw_mutex_free(&pxmitpriv->ack_tx_mutex);
 #endif
-
+	rtw_free_xmit_block(padapter);
 out:
 	return;
 }
@@ -615,7 +651,7 @@ void rtw_update_tx_rate_bmp(struct dvobj_priv *dvobj)
 
 		/* TODO: per rfpath and rate section handling? */
 		if (update_ht_rs == _TRUE || update_vht_rs == _TRUE)
-			rtw_hal_set_tx_power_level(dvobj_get_primary_adapter(dvobj), hal_data->CurrentChannel);
+			rtw_hal_set_tx_power_level(dvobj_get_primary_adapter(dvobj), hal_data->current_channel);
 	}
 }
 
@@ -880,6 +916,17 @@ static void update_attrib_phy_info(_adapter *padapter, struct pkt_attrib *pattri
 		pattrib->ampdu_spacing = padapter->driver_ampdu_spacing;
 	else
 		pattrib->ampdu_spacing = psta->htpriv.rx_ampdu_min_spacing;
+
+	/* check if enable ampdu */
+	if (pattrib->ht_en && psta->htpriv.ampdu_enable) {
+		if (psta->htpriv.agg_enable_bitmap & BIT(pattrib->priority)) {
+			pattrib->ampdu_en = _TRUE;
+			if (psta->htpriv.tx_amsdu_enable == _TRUE)
+				pattrib->amsdu_ampdu_en = _TRUE;
+			else
+				pattrib->amsdu_ampdu_en = _FALSE;
+		}
+	}
 #endif /* CONFIG_80211N_HT */
 	/* if(pattrib->ht_en && psta->htpriv.ampdu_enable) */
 	/* { */
@@ -1650,7 +1697,7 @@ s32 rtw_make_wlanhdr(_adapter *padapter , u8 *hdr, struct pkt_attrib *pattrib)
 
 	_rtw_memset(hdr, 0, WLANHDR_OFFSET);
 
-	SetFrameSubType(fctrl, pattrib->subtype);
+	set_frame_sub_type(fctrl, pattrib->subtype);
 
 	if (pattrib->subtype & WIFI_DATA_TYPE) {
 		if ((check_fwstate(pmlmepriv,  WIFI_STATION_STATE) == _TRUE)) {
@@ -1714,6 +1761,9 @@ s32 rtw_make_wlanhdr(_adapter *padapter , u8 *hdr, struct pkt_attrib *pattrib)
 			SetEOSP(qc, pattrib->eosp);
 
 			SetAckpolicy(qc, pattrib->ack_policy);
+
+			if(pattrib->amsdu)
+				SetAMsdu(qc, pattrib->amsdu);
 		}
 
 		/* TODO: fill HT Control Field */
@@ -1746,12 +1796,13 @@ s32 rtw_make_wlanhdr(_adapter *padapter , u8 *hdr, struct pkt_attrib *pattrib)
 				SetSeqNum(hdr, pattrib->seqnum);
 
 #ifdef CONFIG_80211N_HT
+#if 0 /* move into update_attrib_phy_info(). */
 				/* check if enable ampdu */
 				if (pattrib->ht_en && psta->htpriv.ampdu_enable) {
 					if (psta->htpriv.agg_enable_bitmap & BIT(pattrib->priority))
 						pattrib->ampdu_en = _TRUE;
 				}
-
+#endif
 				/* re-check if enable ampdu by BA_starting_seqctrl */
 				if (pattrib->ampdu_en == _TRUE) {
 					u16 tx_seq;
@@ -1921,7 +1972,7 @@ s32 rtw_make_tdls_wlanhdr(_adapter *padapter , u8 *hdr, struct pkt_attrib *pattr
 
 	_rtw_memset(hdr, 0, WLANHDR_OFFSET);
 
-	SetFrameSubType(fctrl, pattrib->subtype);
+	set_frame_sub_type(fctrl, pattrib->subtype);
 
 	switch (ptxmgmt->action_code) {
 	case TDLS_SETUP_REQUEST:
@@ -2135,6 +2186,231 @@ u32 rtw_calculate_wlan_pkt_size_by_attribue(struct pkt_attrib *pattrib)
 
 	return len;
 }
+
+#ifdef CONFIG_TX_AMSDU
+s32 check_amsdu(struct xmit_frame *pxmitframe)
+{
+	struct pkt_attrib *pattrib;
+	s32 ret = _TRUE;
+
+	if (!pxmitframe)
+		ret = _FALSE;
+
+	pattrib = &pxmitframe->attrib;
+
+	if (IS_MCAST(pattrib->ra))
+		ret = _FALSE;
+
+	if ((pattrib->ether_type == 0x888e) ||
+		(pattrib->ether_type == 0x0806) ||
+		(pattrib->ether_type == 0x88b4) ||
+		(pattrib->dhcp_pkt == 1))
+		ret = _FALSE;
+
+	if ((pattrib->encrypt == _WEP40_) ||
+	    (pattrib->encrypt == _WEP104_) ||
+	    (pattrib->encrypt == _TKIP_))
+		ret = _FALSE;
+
+	if (!pattrib->qos_en)
+		ret = _FALSE;
+
+	if (IS_AMSDU_AMPDU_NOT_VALID(pattrib))
+		ret = _FALSE;
+
+	return ret;
+}
+
+s32 check_amsdu_tx_support(_adapter *padapter)
+{
+	struct dvobj_priv *pdvobjpriv;
+	int tx_amsdu;
+	int tx_amsdu_rate;
+	int current_tx_rate;
+	s32 ret = _FALSE;
+
+	pdvobjpriv = adapter_to_dvobj(padapter);
+	tx_amsdu = padapter->tx_amsdu;
+	tx_amsdu_rate = padapter->tx_amsdu_rate;
+	current_tx_rate = pdvobjpriv->traffic_stat.cur_tx_tp;
+
+	if (tx_amsdu == 1)
+		ret = _TRUE;
+	else if (tx_amsdu == 2 && (tx_amsdu_rate == 0 || current_tx_rate > tx_amsdu_rate))
+		ret = _TRUE;
+	else
+		ret = _FALSE;
+
+	return ret;
+}
+
+s32 rtw_xmitframe_coalesce_amsdu(_adapter *padapter, struct xmit_frame *pxmitframe, struct xmit_frame *pxmitframe_queue)
+{
+
+	struct pkt_file pktfile;
+	struct pkt_attrib *pattrib;
+	_pkt *pkt;
+
+	struct pkt_file pktfile_queue;
+	struct pkt_attrib *pattrib_queue;
+	_pkt *pkt_queue;
+
+	s32 llc_sz, mem_sz;
+
+	s32 padding = 0;
+
+	u8 *pframe, *mem_start;
+	u8 hw_hdr_offset;
+
+	u16* len;
+	u8 *pbuf_start;
+	s32 res = _SUCCESS;
+
+	if (pxmitframe->buf_addr == NULL) {
+		RTW_INFO("==> %s buf_addr==NULL\n", __FUNCTION__);
+		return _FAIL;
+	}
+
+
+	pbuf_start = pxmitframe->buf_addr;
+
+#ifdef CONFIG_USB_TX_AGGREGATION
+	hw_hdr_offset =  TXDESC_SIZE + (pxmitframe->pkt_offset * PACKET_OFFSET_SZ);
+#else
+#ifdef CONFIG_TX_EARLY_MODE /* for SDIO && Tx Agg */
+	hw_hdr_offset = TXDESC_OFFSET + EARLY_MODE_INFO_SIZE;
+#else
+	hw_hdr_offset = TXDESC_OFFSET;
+#endif
+#endif
+
+	mem_start = pbuf_start + hw_hdr_offset; //for DMA
+
+	pattrib = &pxmitframe->attrib;
+
+	pattrib->amsdu = 1;
+
+	if (rtw_make_wlanhdr(padapter, mem_start, pattrib) == _FAIL) {
+		RT_TRACE(_module_rtl871x_xmit_c_, _drv_err_, ("rtw_xmitframe_coalesce: rtw_make_wlanhdr fail; drop pkt\n"));
+		RTW_INFO("rtw_xmitframe_coalesce: rtw_make_wlanhdr fail; drop pkt\n");
+		res = _FAIL;
+		goto exit;
+	}
+
+	llc_sz = 0;
+
+	pframe = mem_start;
+
+	//SetMFrag(mem_start);
+	ClearMFrag(mem_start);
+
+	pframe += pattrib->hdrlen;
+
+	/* adding icv, if necessary... */
+	if (pattrib->iv_len) {
+		_rtw_memcpy(pframe, pattrib->iv, pattrib->iv_len); // queue or new?
+
+		RT_TRACE(_module_rtl871x_xmit_c_, _drv_notice_,
+			("rtw_xmitframe_coalesce: keyid=%d pattrib->iv[3]=%.2x pframe=%.2x %.2x %.2x %.2x\n",
+			padapter->securitypriv.dot11PrivacyKeyIndex, pattrib->iv[3], *pframe, *(pframe + 1), *(pframe + 2), *(pframe + 3)));
+
+		pframe += pattrib->iv_len;
+	}
+
+	pattrib->last_txcmdsz = pattrib->hdrlen + pattrib->iv_len;
+
+	if(pxmitframe_queue)
+	{
+		pattrib_queue = &pxmitframe_queue->attrib;
+		pkt_queue = pxmitframe_queue->pkt;
+
+		_rtw_open_pktfile(pkt_queue, &pktfile_queue);
+		_rtw_pktfile_read(&pktfile_queue, NULL, pattrib_queue->pkt_hdrlen);
+
+		/* 802.3 MAC Header DA(6)  SA(6)  Len(2)*/
+
+		_rtw_memcpy(pframe, pattrib_queue->dst, ETH_ALEN);
+		pframe += ETH_ALEN;
+
+		_rtw_memcpy(pframe, pattrib_queue->src, ETH_ALEN);
+		pframe += ETH_ALEN;
+
+		len = (u16*) pframe;
+		pframe += 2;
+
+		llc_sz = rtw_put_snap(pframe, pattrib_queue->ether_type);
+		pframe += llc_sz;
+
+		mem_sz = _rtw_pktfile_read(&pktfile_queue, pframe, pattrib_queue->pktlen);
+		pframe += mem_sz;
+
+		*len = htons(llc_sz + mem_sz);
+
+		//calc padding
+		padding = 4 - ((ETH_HLEN + llc_sz + mem_sz) & (4-1));
+		if(padding == 4)
+			padding = 0;
+
+		//_rtw_memset(pframe,0xaa, padding);
+		pframe += padding;
+
+		pattrib->last_txcmdsz += ETH_HLEN + llc_sz + mem_sz + padding ;
+	}
+
+	//2nd mpdu
+
+	pkt = pxmitframe->pkt;
+	_rtw_open_pktfile(pkt, &pktfile);
+	_rtw_pktfile_read(&pktfile, NULL, pattrib->pkt_hdrlen);
+
+	/* 802.3 MAC Header  DA(6)  SA(6)  Len(2) */
+
+	_rtw_memcpy(pframe, pattrib->dst, ETH_ALEN);
+	pframe += ETH_ALEN;
+
+	_rtw_memcpy(pframe, pattrib->src, ETH_ALEN);
+	pframe += ETH_ALEN;
+
+	len = (u16*) pframe;
+	pframe += 2;
+
+	llc_sz = rtw_put_snap(pframe, pattrib->ether_type);
+	pframe += llc_sz;
+
+	mem_sz = _rtw_pktfile_read(&pktfile, pframe, pattrib->pktlen);
+
+	pframe += mem_sz;
+
+	*len = htons(llc_sz + mem_sz);
+
+	//the last ampdu has no padding
+	padding = 0;
+
+	pattrib->nr_frags = 1;
+
+	pattrib->last_txcmdsz += ETH_HLEN + llc_sz + mem_sz + padding +
+		((pattrib->bswenc) ? pattrib->icv_len : 0) ;
+
+	if ((pattrib->icv_len > 0) && (pattrib->bswenc)) {
+		_rtw_memcpy(pframe, pattrib->icv, pattrib->icv_len);
+		pframe += pattrib->icv_len;
+	}
+
+	if (xmitframe_addmic(padapter, pxmitframe) == _FAIL) {
+		RT_TRACE(_module_rtl871x_xmit_c_, _drv_err_, ("xmitframe_addmic(padapter, pxmitframe)==_FAIL\n"));
+		RTW_INFO("xmitframe_addmic(padapter, pxmitframe)==_FAIL\n");
+		res = _FAIL;
+		goto exit;
+	}
+
+	xmitframe_swencrypt(padapter, pxmitframe);
+
+	pattrib->vcs_mode = NONE_VCS;
+
+exit:
+	return res;
+}
+#endif /* CONFIG_TX_AMSDU */
 
 /*
 
@@ -2373,7 +2649,7 @@ s32 rtw_mgmt_xmitframe_coalesce(_adapter *padapter, _pkt *pkt, struct xmit_frame
 
 	ori_len = BIP_AAD_SIZE + pattrib->pktlen;
 	tmp_buf = BIP_AAD = rtw_zmalloc(ori_len);
-	subtype = GetFrameSubType(pframe); /* bit(7)~bit(2) */
+	subtype = get_frame_sub_type(pframe); /* bit(7)~bit(2) */
 
 	if (BIP_AAD == NULL)
 		return _FAIL;
@@ -2394,7 +2670,7 @@ s32 rtw_mgmt_xmitframe_coalesce(_adapter *padapter, _pkt *pkt, struct xmit_frame
 		_rtw_memset(MME, 0, _MME_IE_LENGTH_);
 
 		/* other types doesn't need the BIP */
-		if (GetFrameSubType(pframe) != WIFI_DEAUTH && GetFrameSubType(pframe) != WIFI_DISASSOC)
+		if (get_frame_sub_type(pframe) != WIFI_DEAUTH && get_frame_sub_type(pframe) != WIFI_DISASSOC)
 			goto xmitframe_coalesce_fail;
 
 		MGMT_body = pframe + sizeof(struct rtw_ieee80211_hdr_3addr);
@@ -2757,6 +3033,9 @@ struct xmit_frame *__rtw_alloc_cmdxmitframe(struct xmit_priv *pxmitpriv,
 	pcmdframe->pxmitbuf = pxmitbuf;
 
 	pcmdframe->buf_addr = pxmitbuf->pbuf;
+
+	/* initial memory to zero */
+	_rtw_memset(pcmdframe->buf_addr, 0, MAX_CMDBUF_SZ);
 
 	pxmitbuf->priv_data = pcmdframe;
 
@@ -3226,6 +3505,84 @@ static struct xmit_frame *dequeue_one_xmitframe(struct xmit_priv *pxmitpriv, str
 	return pxmitframe;
 }
 
+static struct xmit_frame *get_one_xmitframe(struct xmit_priv *pxmitpriv, struct hw_xmit *phwxmit, struct tx_servq *ptxservq, _queue *pframe_queue)
+{
+	_list	*xmitframe_plist, *xmitframe_phead;
+	struct	xmit_frame	*pxmitframe = NULL;
+
+	xmitframe_phead = get_list_head(pframe_queue);
+	xmitframe_plist = get_next(xmitframe_phead);
+
+	while ((rtw_end_of_queue_search(xmitframe_phead, xmitframe_plist)) == _FALSE) {
+		pxmitframe = LIST_CONTAINOR(xmitframe_plist, struct xmit_frame, list);
+		break;
+	}
+
+	return pxmitframe;
+}
+
+struct xmit_frame *rtw_get_xframe(struct xmit_priv *pxmitpriv, int *num_frame)
+{
+	_irqL irqL0;
+	_list *sta_plist, *sta_phead;
+	struct hw_xmit *phwxmit_i = pxmitpriv->hwxmits;
+	sint entry =  pxmitpriv->hwxmit_entry;
+
+	struct hw_xmit *phwxmit;
+	struct tx_servq *ptxservq = NULL;
+	_queue *pframe_queue = NULL;
+	struct xmit_frame *pxmitframe = NULL;
+	_adapter *padapter = pxmitpriv->adapter;
+	struct registry_priv	*pregpriv = &padapter->registrypriv;
+	int i, inx[4];
+
+#ifdef CONFIG_USB_HCI
+	/*	int j, tmp, acirp_cnt[4]; */
+#endif
+
+	inx[0] = 0;
+	inx[1] = 1;
+	inx[2] = 2;
+	inx[3] = 3;
+
+	*num_frame = 0;
+
+	/*No amsdu when wifi_spec on*/
+	if (pregpriv->wifi_spec == 1) {
+		return NULL;
+	}
+
+	_enter_critical_bh(&pxmitpriv->lock, &irqL0);
+
+	for (i = 0; i < entry; i++) {
+		phwxmit = phwxmit_i + inx[i];
+
+		sta_phead = get_list_head(phwxmit->sta_queue);
+		sta_plist = get_next(sta_phead);
+
+		while ((rtw_end_of_queue_search(sta_phead, sta_plist)) == _FALSE) {
+
+			ptxservq = LIST_CONTAINOR(sta_plist, struct tx_servq, tx_pending);
+			pframe_queue = &ptxservq->sta_pending;
+
+			if(ptxservq->qcnt)
+			{
+				*num_frame = ptxservq->qcnt;
+				pxmitframe = get_one_xmitframe(pxmitpriv, phwxmit, ptxservq, pframe_queue);
+				goto exit;
+			}
+			sta_plist = get_next(sta_plist);
+		}
+	}
+
+exit:
+
+	_exit_critical_bh(&pxmitpriv->lock, &irqL0);
+
+	return pxmitframe;
+}
+
+
 struct xmit_frame *rtw_dequeue_xframe(struct xmit_priv *pxmitpriv, struct hw_xmit *phwxmit_i, sint entry)
 {
 	_irqL irqL0;
@@ -3304,7 +3661,6 @@ struct xmit_frame *rtw_dequeue_xframe(struct xmit_priv *pxmitpriv, struct hw_xmi
 exit:
 
 	_exit_critical_bh(&pxmitpriv->lock, &irqL0);
-
 
 	return pxmitframe;
 }
@@ -3814,6 +4170,7 @@ static void do_queue_select(_adapter	*padapter, struct pkt_attrib *pattrib)
  *	0	success, hardware will handle this xmit frame(packet)
  *	<0	fail
  */
+ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24))
 s32 rtw_monitor_xmit_entry(struct sk_buff *skb, struct net_device *ndev)
 {
 	int ret = 0;
@@ -3946,7 +4303,7 @@ fail:
 
 	return 0;
 }
-
+#endif
 /*
  * The main transmit(tx) entry
  *
@@ -4769,7 +5126,7 @@ struct xmit_buf *dequeue_pending_xmitbuf(
 	return pxmitbuf;
 }
 
-struct xmit_buf *dequeue_pending_xmitbuf_under_survey(
+static struct xmit_buf *dequeue_pending_xmitbuf_under_survey(
 	struct xmit_priv *pxmitpriv)
 {
 	_irqL irql;
@@ -4787,7 +5144,7 @@ struct xmit_buf *dequeue_pending_xmitbuf_under_survey(
 
 	if (_rtw_queue_empty(pqueue) == _FALSE) {
 		_list *plist, *phead;
-		u8 type;
+		u8 type = 0;
 
 		phead = get_list_head(pqueue);
 		plist = phead;
@@ -4801,11 +5158,11 @@ struct xmit_buf *dequeue_pending_xmitbuf_under_survey(
 #ifdef CONFIG_USB_HCI
 			pxmitframe = (struct xmit_frame *)pxmitbuf->priv_data;
 			if (pxmitframe)
-				type = GetFrameSubType(pxmitbuf->pbuf + TXDESC_SIZE + pxmitframe->pkt_offset * PACKET_OFFSET_SZ);
+				type = get_frame_sub_type(pxmitbuf->pbuf + TXDESC_SIZE + pxmitframe->pkt_offset * PACKET_OFFSET_SZ);
 			else
 				RTW_INFO("%s, !!!ERROR!!! For USB, TODO ITEM\n", __FUNCTION__);
 #else
-			type = GetFrameSubType(pxmitbuf->pbuf + TXDESC_OFFSET);
+			type = get_frame_sub_type(pxmitbuf->pbuf + TXDESC_OFFSET);
 #endif
 
 			if ((type == WIFI_PROBEREQ) ||
@@ -4819,6 +5176,63 @@ struct xmit_buf *dequeue_pending_xmitbuf_under_survey(
 	}
 
 	_exit_critical_bh(&pqueue->lock, &irql);
+
+	return pxmitbuf;
+}
+
+static struct xmit_buf *dequeue_pending_xmitbuf_ext(
+	struct xmit_priv *pxmitpriv)
+{
+	_irqL irql;
+	struct xmit_buf *pxmitbuf;
+	_queue *pqueue;
+
+	pxmitbuf = NULL;
+	pqueue = &pxmitpriv->pending_xmitbuf_queue;
+
+	_enter_critical_bh(&pqueue->lock, &irql);
+
+	if (_rtw_queue_empty(pqueue) == _FALSE) {
+		_list *plist, *phead;
+		u8 type = 0;
+
+		phead = get_list_head(pqueue);
+		plist = phead;
+		do {
+			plist = get_next(plist);
+			if (plist == phead)
+				break;
+
+			pxmitbuf = LIST_CONTAINOR(plist, struct xmit_buf, list);
+
+			if (pxmitbuf->buf_tag == XMITBUF_MGNT) {
+				rtw_list_delete(&pxmitbuf->list);
+				break;
+			}
+			pxmitbuf = NULL;
+		} while (1);
+	}
+
+	_exit_critical_bh(&pqueue->lock, &irql);
+
+	return pxmitbuf;
+}
+
+struct xmit_buf *select_and_dequeue_pending_xmitbuf(_adapter *padapter)
+{
+	struct xmit_priv *pxmitpriv = &padapter->xmitpriv;
+	struct xmit_buf *pxmitbuf = NULL;
+
+	if (_TRUE == rtw_is_xmit_blocked(padapter))
+		return pxmitbuf;
+
+	if (rtw_xmit_ac_blocked(padapter) == _TRUE)
+		pxmitbuf = dequeue_pending_xmitbuf_under_survey(pxmitpriv);
+	else {
+		pxmitbuf = dequeue_pending_xmitbuf_ext(pxmitpriv);
+		if (pxmitbuf == NULL)
+			pxmitbuf = dequeue_pending_xmitbuf(pxmitpriv);
+	}
 
 	return pxmitbuf;
 }
@@ -4858,11 +5272,73 @@ thread_return rtw_xmit_thread(thread_context context)
 		flush_signals_thread();
 	} while (_SUCCESS == err);
 
-	_rtw_up_sema(&padapter->xmitpriv.terminate_xmitthread_sema);
+	RTW_INFO(FUNC_ADPT_FMT " Exit\n", FUNC_ADPT_ARG(padapter));
 
-	thread_exit();
+	rtw_thread_wait_stop();
+
+	return 0;
 }
 #endif
+
+#ifdef DBG_XMIT_BLOCK
+void dump_xmit_block(void *sel, _adapter *padapter)
+{
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+
+	RTW_PRINT_SEL(sel, "[XMIT-BLOCK] xmit_block :0x%02x\n", dvobj->xmit_block);
+	if (dvobj->xmit_block & XMIT_BLOCK_REDLMEM)
+		RTW_PRINT_SEL(sel, "Reason:%s\n", "XMIT_BLOCK_REDLMEM");
+	if (dvobj->xmit_block & XMIT_BLOCK_SUSPEND)
+		RTW_PRINT_SEL(sel, "Reason:%s\n", "XMIT_BLOCK_SUSPEND");
+	if (dvobj->xmit_block == XMIT_BLOCK_NONE)
+		RTW_PRINT_SEL(sel, "Reason:%s\n", "XMIT_BLOCK_NONE");
+}
+void dump_xmit_block_info(void *sel, const char *fun_name, _adapter *padapter)
+{
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+
+	RTW_INFO("\n"ADPT_FMT" call %s\n", ADPT_ARG(padapter), fun_name);
+	dump_xmit_block(sel, padapter);
+}
+#define DBG_XMIT_BLOCK_DUMP(adapter)	dump_xmit_block_info(RTW_DBGDUMP, __func__, adapter)
+#endif
+
+void rtw_set_xmit_block(_adapter *padapter, enum XMIT_BLOCK_REASON reason)
+{
+	_irqL irqL;
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+
+	_enter_critical_bh(&dvobj->xmit_block_lock, &irqL);
+	dvobj->xmit_block |= reason;
+	_exit_critical_bh(&dvobj->xmit_block_lock, &irqL);
+
+	#ifdef DBG_XMIT_BLOCK
+	DBG_XMIT_BLOCK_DUMP(padapter);
+	#endif
+}
+
+void rtw_clr_xmit_block(_adapter *padapter, enum XMIT_BLOCK_REASON reason)
+{
+	_irqL irqL;
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+
+	_enter_critical_bh(&dvobj->xmit_block_lock, &irqL);
+	dvobj->xmit_block &= ~reason;
+	_exit_critical_bh(&dvobj->xmit_block_lock, &irqL);
+
+	#ifdef DBG_XMIT_BLOCK
+	DBG_XMIT_BLOCK_DUMP(padapter);
+	#endif
+}
+bool rtw_is_xmit_blocked(_adapter *padapter)
+{
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+
+	#ifdef DBG_XMIT_BLOCK
+	DBG_XMIT_BLOCK_DUMP(padapter);
+	#endif
+	return ((dvobj->xmit_block) ? _TRUE : _FALSE);
+}
 
 bool rtw_xmit_ac_blocked(_adapter *adapter)
 {
@@ -4907,6 +5383,159 @@ bool rtw_xmit_ac_blocked(_adapter *adapter)
 exit:
 	return blocked;
 }
+
+#ifdef CONFIG_TX_AMSDU
+void rtw_amsdu_vo_timeout_handler(void *FunctionContext)
+{
+	_adapter *adapter = (_adapter *)FunctionContext;
+
+	adapter->xmitpriv.amsdu_vo_timeout = RTW_AMSDU_TIMER_TIMEOUT;
+
+	tasklet_hi_schedule(&adapter->xmitpriv.xmit_tasklet);
+}
+
+void rtw_amsdu_vi_timeout_handler(void *FunctionContext)
+{
+	_adapter *adapter = (_adapter *)FunctionContext;
+
+	adapter->xmitpriv.amsdu_vi_timeout = RTW_AMSDU_TIMER_TIMEOUT;
+
+	tasklet_hi_schedule(&adapter->xmitpriv.xmit_tasklet);
+}
+
+void rtw_amsdu_be_timeout_handler(void *FunctionContext)
+{
+	_adapter *adapter = (_adapter *)FunctionContext;
+
+	adapter->xmitpriv.amsdu_be_timeout = RTW_AMSDU_TIMER_TIMEOUT;
+
+	if (printk_ratelimit())
+		RTW_INFO("%s Timeout!\n",__FUNCTION__);
+
+	tasklet_hi_schedule(&adapter->xmitpriv.xmit_tasklet);
+}
+
+void rtw_amsdu_bk_timeout_handler(void *FunctionContext)
+{
+	_adapter *adapter = (_adapter *)FunctionContext;
+
+	adapter->xmitpriv.amsdu_bk_timeout = RTW_AMSDU_TIMER_TIMEOUT;
+
+	tasklet_hi_schedule(&adapter->xmitpriv.xmit_tasklet);
+}
+
+u8 rtw_amsdu_get_timer_status(_adapter *padapter, u8 priority)
+{
+	struct xmit_priv        *pxmitpriv = &padapter->xmitpriv;
+
+	u8 status =  RTW_AMSDU_TIMER_UNSET;
+
+	switch(priority)
+	{
+		case 1:
+		case 2:
+			status = pxmitpriv->amsdu_bk_timeout;
+			break;
+		case 4:
+		case 5:
+			status = pxmitpriv->amsdu_vi_timeout;
+			break;
+		case 6:
+		case 7:
+			status = pxmitpriv->amsdu_vo_timeout;
+			break;
+		case 0:
+		case 3:
+		default:
+			status = pxmitpriv->amsdu_be_timeout;
+			break;
+	}
+	return status;
+}
+
+void rtw_amsdu_set_timer_status(_adapter *padapter, u8 priority, u8 status)
+{
+	struct xmit_priv        *pxmitpriv = &padapter->xmitpriv;
+
+	switch(priority)
+	{
+		case 1:
+		case 2:
+			pxmitpriv->amsdu_bk_timeout = status;
+			break;
+		case 4:
+		case 5:
+			pxmitpriv->amsdu_vi_timeout = status;
+			break;
+		case 6:
+		case 7:
+			pxmitpriv->amsdu_vo_timeout = status;
+			break;
+		case 0:
+		case 3:
+		default:
+			pxmitpriv->amsdu_be_timeout = status;
+			break;
+	}
+}
+
+void rtw_amsdu_set_timer(_adapter *padapter, u8 priority)
+{
+	struct xmit_priv        *pxmitpriv = &padapter->xmitpriv;
+
+	_timer* amsdu_timer = NULL;
+
+	switch(priority)
+	{
+		case 1:
+		case 2:
+			amsdu_timer = &pxmitpriv->amsdu_bk_timer;
+			break;
+		case 4:
+		case 5:
+			amsdu_timer = &pxmitpriv->amsdu_vi_timer;
+			break;
+		case 6:
+		case 7:
+			amsdu_timer = &pxmitpriv->amsdu_vo_timer;
+			break;
+		case 0:
+		case 3:
+		default:
+			amsdu_timer = &pxmitpriv->amsdu_be_timer;
+			break;
+	}
+	_set_timer(amsdu_timer, 1);
+}
+
+void rtw_amsdu_cancel_timer(_adapter *padapter, u8 priority)
+{
+	struct xmit_priv        *pxmitpriv = &padapter->xmitpriv;
+	_timer* amsdu_timer = NULL;
+
+	switch(priority)
+	{
+		case 1:
+		case 2:
+			amsdu_timer = &pxmitpriv->amsdu_bk_timer;
+			break;
+		case 4:
+		case 5:
+			amsdu_timer = &pxmitpriv->amsdu_vi_timer;
+			break;
+		case 6:
+		case 7:
+			amsdu_timer = &pxmitpriv->amsdu_vo_timer;
+			break;
+		case 0:
+		case 3:
+		default:
+			amsdu_timer = &pxmitpriv->amsdu_be_timer;
+			break;
+	}
+	_cancel_timer_ex(amsdu_timer);
+}
+#endif /* CONFIG_TX_AMSDU */
 
 void rtw_sctx_init(struct submit_ctx *sctx, int timeout_ms)
 {
@@ -4974,63 +5603,8 @@ void rtw_sctx_done(struct submit_ctx **sctx)
 }
 
 #ifdef CONFIG_XMIT_ACK
-
-#ifdef CONFIG_XMIT_ACK_POLLING
-s32 c2h_evt_hdl(_adapter *adapter, u8 *c2h_evt, c2h_id_filter filter);
-
-/**
- * rtw_ack_tx_polling -
- * @pxmitpriv: xmit_priv to address ack_tx_ops
- * @timeout_ms: timeout msec
- *
- * Init ack_tx_ops and then do c2h_evt_hdl() and polling ack_tx_ops repeatedly
- * till tx report or timeout
- * Returns: _SUCCESS if TX report ok, _FAIL for others
- */
-int rtw_ack_tx_polling(struct xmit_priv *pxmitpriv, u32 timeout_ms)
-{
-	int ret = _FAIL;
-	struct submit_ctx *pack_tx_ops = &pxmitpriv->ack_tx_ops;
-	_adapter *adapter = container_of(pxmitpriv, _adapter, xmitpriv);
-
-	pack_tx_ops->submit_time = rtw_get_current_time();
-	pack_tx_ops->timeout_ms = timeout_ms;
-	pack_tx_ops->status = RTW_SCTX_SUBMITTED;
-
-	do {
-		c2h_evt_hdl(adapter, NULL, rtw_hal_c2h_id_filter_ccx(adapter));
-		if (pack_tx_ops->status != RTW_SCTX_SUBMITTED)
-			break;
-
-		if (rtw_is_drv_stopped(adapter)) {
-			pack_tx_ops->status = RTW_SCTX_DONE_DRV_STOP;
-			break;
-		}
-		if (rtw_is_surprise_removed(adapter)) {
-			pack_tx_ops->status = RTW_SCTX_DONE_DEV_REMOVE;
-			break;
-		}
-
-		rtw_msleep_os(10);
-	} while (rtw_get_passing_time_ms(pack_tx_ops->submit_time) < timeout_ms);
-
-	if (pack_tx_ops->status == RTW_SCTX_SUBMITTED) {
-		pack_tx_ops->status = RTW_SCTX_DONE_TIMEOUT;
-		RTW_INFO("%s timeout\n", __func__);
-	}
-
-	if (pack_tx_ops->status == RTW_SCTX_DONE_SUCCESS)
-		ret = _SUCCESS;
-
-	return ret;
-}
-#endif
-
 int rtw_ack_tx_wait(struct xmit_priv *pxmitpriv, u32 timeout_ms)
 {
-#ifdef CONFIG_XMIT_ACK_POLLING
-	return rtw_ack_tx_polling(pxmitpriv, timeout_ms);
-#else
 	struct submit_ctx *pack_tx_ops = &pxmitpriv->ack_tx_ops;
 
 	pack_tx_ops->submit_time = rtw_get_current_time();
@@ -5038,7 +5612,6 @@ int rtw_ack_tx_wait(struct xmit_priv *pxmitpriv, u32 timeout_ms)
 	pack_tx_ops->status = RTW_SCTX_SUBMITTED;
 
 	return rtw_sctx_wait(pack_tx_ops, __func__);
-#endif
 }
 
 void rtw_ack_tx_done(struct xmit_priv *pxmitpriv, int status)

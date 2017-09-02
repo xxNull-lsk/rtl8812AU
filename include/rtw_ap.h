@@ -35,7 +35,7 @@ void rtw_add_bcn_ie(_adapter *padapter, WLAN_BSSID_EX *pnetwork, u8 index, u8 *d
 void rtw_remove_bcn_ie(_adapter *padapter, WLAN_BSSID_EX *pnetwork, u8 index);
 void _update_beacon(_adapter *padapter, u8 ie_id, u8 *oui, u8 tx, const char *tag);
 #define update_beacon(adapter, ie_id, oui, tx) _update_beacon((adapter), (ie_id), (oui), (tx), __func__)
-void add_RATid(_adapter *padapter, struct sta_info *psta, u8 rssi_level);
+void add_RATid(_adapter *padapter, struct sta_info *psta, u8 rssi_level, u8 is_update_bw);
 void expire_timeout_chk(_adapter *padapter);
 void update_sta_info_apmode(_adapter *padapter, struct sta_info *psta);
 void rtw_start_bss_hdl_after_chbw_decided(_adapter *adapter);
@@ -72,7 +72,7 @@ bool rtw_ap_chbw_decision(_adapter *adapter, s16 req_ch, s8 req_bw, s8 req_offse
 #ifdef CONFIG_AUTO_AP_MODE
 extern void rtw_start_auto_ap(_adapter *adapter);
 #endif /* CONFIG_AUTO_AP_MODE */
-
+void rtw_ap_acdata_control(_adapter *padapter, u8 power_mode);
 #endif /* end of CONFIG_AP_MODE */
 
 #endif
@@ -84,5 +84,5 @@ int rtw_ht_operation_update(_adapter *padapter);
 
 #ifdef CONFIG_SWTIMER_BASED_TXBCN
 void tx_beacon_handlder(struct dvobj_priv *pdvobj);
-void tx_beacon_timer_handlder(struct dvobj_priv *pdvobj);
+void tx_beacon_timer_handlder(void *ctx);
 #endif

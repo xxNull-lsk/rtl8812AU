@@ -2,7 +2,7 @@
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
- *                                        
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
  * published by the Free Software Foundation.
@@ -18,27 +18,27 @@
  *
  *
  ******************************************************************************/
- 
+
 #ifndef	__PHYDMADAPTIVITY_H__
 #define    __PHYDMADAPTIVITY_H__
 
-#define ADAPTIVITY_VERSION	"9.3.3"	/*20151230 changed by Kevin, modify 0x524[11] when adaptivity is enabled*/
+#define ADAPTIVITY_VERSION	"9.5.2"	/*20170330 changed by Kevin, change th_l2h_ini setting for 5G: v2.1.0*/
 
-#define PwdBUpperBound	7
-#define DFIRloss	5
+#define pwdb_upper_bound	7
+#define dfir_loss	7
 
 #if (DM_ODM_SUPPORT_TYPE & (ODM_WIN))
-typedef enum _tag_PhyDM_REGULATION_Type {
+enum phydm_regulation_type {
 	REGULATION_FCC = 0,
 	REGULATION_MKK = 1,
 	REGULATION_ETSI = 2,
-	REGULATION_WW = 3,	
-	
+	REGULATION_WW = 3,
+
 	MAX_REGULATION_NUM = 4
-} PhyDM_REGULATION_TYPE;
+};
 #endif
 
-typedef enum _PHYDM_ADAPTIVITY_Info_Definition {
+enum phydm_adapinfo_e {
 	PHYDM_ADAPINFO_CARRIER_SENSE_ENABLE = 0,
 	PHYDM_ADAPINFO_DCBACKOFF,
 	PHYDM_ADAPINFO_DYNAMICLINKADAPTIVITY,
@@ -46,177 +46,201 @@ typedef enum _PHYDM_ADAPTIVITY_Info_Definition {
 	PHYDM_ADAPINFO_TH_EDCCA_HL_DIFF,
 	PHYDM_ADAPINFO_AP_NUM_TH
 
-} PHYDM_ADAPINFO_E;
+};
 
 
 
-typedef enum tag_PhyDM_set_LNA {
-	PhyDM_disable_LNA		= 0,
-	PhyDM_enable_LNA		= 1,
-} PhyDM_set_LNA;
+enum phydm_set_lna {
+	phydm_disable_lna		= 0,
+	phydm_enable_lna		= 1,
+};
 
 
-typedef enum tag_PhyDM_TRx_MUX_Type
-{
-	PhyDM_SHUTDOWN			= 0,
-	PhyDM_STANDBY_MODE		= 1,
-	PhyDM_TX_MODE			= 2,
-	PhyDM_RX_MODE			= 3
-}PhyDM_Trx_MUX_Type;
+enum phydm_trx_mux_type {
+	phydm_shutdown			= 0,
+	phydm_standby_mode		= 1,
+	phydm_tx_mode			= 2,
+	phydm_rx_mode			= 3
+};
 
-typedef enum tag_PhyDM_MACEDCCA_Type
-{
-	PhyDM_IGNORE_EDCCA			= 0,
-	PhyDM_DONT_IGNORE_EDCCA	= 1
-}PhyDM_MACEDCCA_Type;
+enum phydm_mac_edcca_type {
+	phydm_ignore_edcca			= 0,
+	phydm_dont_ignore_edcca	= 1
+};
 
-typedef struct _ADAPTIVITY_STATISTICS {
-	s1Byte			TH_L2H_ini_backup;
-	s1Byte			TH_EDCCA_HL_diff_backup;
-	s1Byte			IGI_Base;
-	u1Byte			IGI_target;
-	u1Byte			NHMWait;
-	s1Byte			H2L_lb;
-	s1Byte			L2H_lb;
-	BOOLEAN			bFirstLink;
-	BOOLEAN			bCheck;
-	BOOLEAN			DynamicLinkAdaptivity;
-	u1Byte			APNumTH;
-	u1Byte			AdajustIGILevel;
-	BOOLEAN			AcsForAdaptivity;
-	s1Byte			backupL2H;
-	s1Byte			backupH2L;
-	BOOLEAN			bStopEDCCA;
-#if (DM_ODM_SUPPORT_TYPE & ODM_WIN)	
-	RT_WORK_ITEM	phydm_pauseEDCCAWorkItem;
-	RT_WORK_ITEM	phydm_resumeEDCCAWorkItem;
+enum phydm_adaptivity_mode {
+	PHYDM_ADAPT_MSG	= 0,
+	PHYDM_ADAPT_DEBUG	= 1,
+	PHYDM_ADAPT_RESUME	= 2
+};
+
+struct _ADAPTIVITY_STATISTICS {
+	s8			th_l2h_ini_backup;
+	s8			th_edcca_hl_diff_backup;
+	s8			igi_base;
+	u8			igi_target;
+	u8			nhm_wait;
+	s8			h2l_lb;
+	s8			l2h_lb;
+	boolean			is_first_link;
+	boolean			is_check;
+	boolean			dynamic_link_adaptivity;
+	u8			ap_num_th;
+	u8			adajust_igi_level;
+	boolean			acs_for_adaptivity;
+	s8			backup_l2h;
+	s8			backup_h2l;
+	boolean			is_stop_edcca;
+#if (DM_ODM_SUPPORT_TYPE & ODM_WIN)
+	RT_WORK_ITEM	phydm_pause_edcca_work_item;
+	RT_WORK_ITEM	phydm_resume_edcca_work_item;
 #endif
-} ADAPTIVITY_STATISTICS, *PADAPTIVITY_STATISTICS;
+	u32			adaptivity_dbg_port; /*N:0x208, AC:0x209*/
+	u8			debug_mode;
+	s8			th_l2h_ini_debug;
+};
 
-VOID
-phydm_pauseEDCCA(
-	IN	PVOID	pDM_VOID,
-	IN	BOOLEAN	bPasueEDCCA
+void
+phydm_pause_edcca(
+	void	*p_dm_void,
+	boolean	is_pasue_edcca
 );
 
-VOID
-Phydm_CheckAdaptivity(
-	IN		PVOID			pDM_VOID
-	);
-
-VOID
-Phydm_CheckEnvironment(
-	IN		PVOID					pDM_VOID
-	);
-
-VOID
-Phydm_NHMCounterStatisticsInit(
-	IN		PVOID					pDM_VOID
-	);
-
-VOID
-Phydm_NHMCounterStatistics(
-	IN		PVOID					pDM_VOID
-	);
-
-VOID
-Phydm_NHMCounterStatisticsReset(
-	IN		PVOID			pDM_VOID
+void
+phydm_check_adaptivity(
+	void			*p_dm_void
 );
 
-VOID
-Phydm_GetNHMCounterStatistics(
-	IN		PVOID			pDM_VOID
+void
+phydm_check_environment(
+	void					*p_dm_void
 );
 
-VOID
-Phydm_MACEDCCAState(
-	IN	PVOID					pDM_VOID,
-	IN	PhyDM_MACEDCCA_Type		State
+void
+phydm_nhm_counter_statistics_init(
+	void					*p_dm_void
 );
 
-VOID
-Phydm_SetEDCCAThreshold(
-	IN		PVOID		pDM_VOID,
-	IN		s1Byte		H2L,
-	IN		s1Byte		L2H
+void
+phydm_nhm_counter_statistics(
+	void					*p_dm_void
 );
 
-VOID
-Phydm_SetTRxMux(
-	IN		PVOID			pDM_VOID,
-	IN		PhyDM_Trx_MUX_Type			txMode,
-	IN		PhyDM_Trx_MUX_Type			rxMode
-);	
-
-BOOLEAN
-Phydm_CalNHMcnt(
-	IN		PVOID		pDM_VOID
+void
+phydm_nhm_counter_statistics_reset(
+	void			*p_dm_void
 );
 
-VOID
-Phydm_SearchPwdBLowerBound(
-	IN		PVOID					pDM_VOID
+void
+phydm_get_nhm_counter_statistics(
+	void			*p_dm_void
 );
 
-VOID
-phydm_adaptivityInfoInit(
-	IN	PVOID			pDM_VOID,
-	IN	PHYDM_ADAPINFO_E	CmnInfo,
-	IN	u4Byte				Value	
-	);
+void
+phydm_mac_edcca_state(
+	void					*p_dm_void,
+	enum phydm_mac_edcca_type		state
+);
 
-VOID 
-Phydm_AdaptivityInit(
-	IN		PVOID					pDM_VOID
-	);
+void
+phydm_set_edcca_threshold(
+	void		*p_dm_void,
+	s8		H2L,
+	s8		L2H
+);
 
-VOID
-Phydm_Adaptivity(
-	IN		PVOID					pDM_VOID,
-	IN		u1Byte					IGI
-	);
+void
+phydm_set_trx_mux(
+	void			*p_dm_void,
+	enum phydm_trx_mux_type			tx_mode,
+	enum phydm_trx_mux_type			rx_mode
+);
 
-VOID
-phydm_setEDCCAThresholdAPI(
-	IN	PVOID	pDM_VOID,
-	IN	u1Byte	IGI
+boolean
+phydm_cal_nhm_cnt(
+	void		*p_dm_void
+);
+
+void
+phydm_search_pwdb_lower_bound(
+	void					*p_dm_void
+);
+
+void
+phydm_adaptivity_info_init(
+	void			*p_dm_void,
+	enum phydm_adapinfo_e	cmn_info,
+	u32				value
+);
+
+void
+phydm_adaptivity_init(
+	void					*p_dm_void
+);
+
+void
+phydm_adaptivity(
+	void			*p_dm_void
+);
+
+void
+phydm_set_edcca_threshold_api(
+	void	*p_dm_void,
+	u8	IGI
 );
 
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
-VOID
-Phydm_DisableEDCCA(
-	IN		PVOID					pDM_VOID
+void
+phydm_disable_edcca(
+	void					*p_dm_void
 );
 
-VOID
-Phydm_DynamicEDCCA(
-	IN		PVOID					pDM_VOID
+void
+phydm_dynamic_edcca(
+	void					*p_dm_void
 );
 
-VOID
-Phydm_AdaptivityBSOD(
-	IN		PVOID					pDM_VOID
+void
+phydm_adaptivity_bsod(
+	void					*p_dm_void
 );
 
 #endif
 
-VOID 
-phydm_pauseEDCCA_WorkItemCallback(
+void
+phydm_pause_edcca_work_item_callback(
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
-	IN	PADAPTER		Adapter
+	struct _ADAPTER		*adapter
 #else
-	IN PVOID			pDM_VOID
+	void			*p_dm_void
 #endif
-	);
+);
 
-VOID 
-phydm_resumeEDCCA_WorkItemCallback(
+void
+phydm_resume_edcca_work_item_callback(
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
-	IN	PADAPTER		Adapter
+	struct _ADAPTER		*adapter
 #else
-	IN PVOID			pDM_VOID
+	void			*p_dm_void
 #endif
-	);
+);
 
+void
+phydm_adaptivity_debug(
+	void		*p_dm_void,
+	u32		*const dm_value,
+	u32		*_used,
+	char		*output,
+	u32		*_out_len
+);
+
+void
+phydm_set_l2h_th_ini(
+	void		*p_dm_void
+);
+
+void
+phydm_set_forgetting_factor(
+	void		*p_dm_void
+);
 #endif

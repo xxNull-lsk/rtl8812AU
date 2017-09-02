@@ -1,27 +1,45 @@
+/******************************************************************************
+*
+* Copyright(c) 2007 - 2016 Realtek Corporation. All rights reserved.
+*
+* This program is free software; you can redistribute it and/or modify it
+* under the terms of version 2 of the GNU General Public License as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+* more details.
+*
+* You should have received a copy of the GNU General Public License along with
+* this program; if not, write to the Free Software Foundation, Inc.,
+* 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+*
+*
+******************************************************************************/
 
 #ifdef CONFIG_RTL8821A
+
 #ifndef _FW_HEADER_8821A_H
 #define _FW_HEADER_8821A_H
 
 #ifdef LOAD_FW_HEADER_FROM_DRIVER
 #if (defined(CONFIG_AP_WOWLAN) || (DM_ODM_SUPPORT_TYPE & (ODM_AP)))
-extern u1Byte Array_MP_8821A_FW_AP[17154];
-extern u4Byte ArrayLength_MP_8821A_FW_AP;
+extern u8 array_mp_8821a_fw_ap[17152];
+extern u32 array_length_mp_8821a_fw_ap;
 #endif
 
 #if (DM_ODM_SUPPORT_TYPE & (ODM_WIN)) || (DM_ODM_SUPPORT_TYPE & (ODM_CE))
-extern u1Byte Array_MP_8821A_FW_NIC[31924];
-extern u4Byte ArrayLength_MP_8821A_FW_NIC;
-
-extern u1Byte Array_MP_8821A_FW_NIC_BT[32334];
-extern u4Byte ArrayLength_MP_8821A_FW_NIC_BT;
-
-extern u1Byte Array_MP_8821A_FW_WoWLAN[28460];
-extern u4Byte ArrayLength_MP_8821A_FW_WoWLAN;
+extern u8 array_mp_8821a_fw_nic[31834];
+extern u32 array_length_mp_8821a_fw_nic;
+extern u8 array_mp_8821a_fw_nic_bt[32392];
+extern u32 array_length_mp_8821a_fw_nic_bt;
+extern u8 array_mp_8821a_fw_wowlan[28298];
+extern u32 array_length_mp_8821a_fw_wowlan;
 #endif
-#endif /* end of LOAD_FW_HEADER_FROM_DRIVER*/
+#endif /* end of LOAD_FW_HEADER_FROM_DRIVER */
 
 #endif
-#endif /* end of HWIMG_SUPPORT*/
 
+#endif
 

@@ -98,13 +98,11 @@ void interrupt_handler_8812au(_adapter *padapter, u16 pkt_len, u8 *pbuf)
 		RTW_INFO("===> %s Receive FIFO Overflow\n", __FUNCTION__);
 #endif/* DBG_CONFIG_ERROR_DETECT_INT */
 
-
+#ifdef CONFIG_FW_C2H_REG
 	/* C2H Event */
-	if (pbuf[0] != 0) {
-		_rtw_memcpy(&(pHalData->C2hArray[0]), &(pbuf[USB_INTR_CONTENT_C2H_OFFSET]), 16);
-		/* rtw_c2h_wk_cmd(padapter); to do.. */
-	}
-
+	if (pbuf[0] != 0)
+		usb_c2h_hisr_hdl(padapter, pbuf);
+#endif
 }
 #endif
 
@@ -198,7 +196,7 @@ int recvbuf2recvframe(PADAPTER padapter, void *ptr)
 		} else { /* pkt_rpt_type == TX_REPORT1-CCX, TX_REPORT2-TX RTP,HIS_REPORT-USB HISR RTP */
 			if (pattrib->pkt_rpt_type == C2H_PACKET) {
 				/*RTW_INFO("rx C2H_PACKET\n");*/
-				C2HPacketHandler_8812(padapter, precvframe->u.hdr.rx_data, pattrib->pkt_len);
+				rtw_hal_c2h_pkt_pre_hdl(padapter, precvframe->u.hdr.rx_data, pattrib->pkt_len);
 			} else if (pattrib->pkt_rpt_type == HIS_REPORT) {
 				/*RTW_INFO("%s rx USB HISR\n", __func__);*/
 #ifdef CONFIG_SUPPORT_USB_INT

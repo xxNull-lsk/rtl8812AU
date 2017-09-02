@@ -187,7 +187,7 @@ void rtl8188f_set_rssi_cmd(PADAPTER padapter, u8 *param);
 void rtl8188f_fw_try_ap_cmd(PADAPTER padapter, u32 need_ack);
 /* s32 rtl8188f_set_lowpwr_lps_cmd(PADAPTER padapter, u8 enable); */
 void rtl8188f_set_FwPsTuneParam_cmd(PADAPTER padapter);
-void rtl8188f_set_FwMacIdConfig_cmd(_adapter *padapter, u8 mac_id, u8 raid, u8 bw, u8 sgi, u32 mask);
+void rtl8188f_set_FwMacIdConfig_cmd(_adapter *padapter, u8 mac_id, u8 raid, u8 bw, u8 sgi, u32 mask, u8 ignore_bw);
 void rtl8188f_set_FwBtMpOper_cmd(PADAPTER padapter, u8 idx, u8 ver, u8 reqnum, u8 *param);
 void rtl8188f_download_rsvd_page(PADAPTER padapter, u8 mstatus);
 #ifdef CONFIG_BT_COEXIST

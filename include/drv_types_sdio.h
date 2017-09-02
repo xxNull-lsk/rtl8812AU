@@ -24,11 +24,8 @@
 #ifdef PLATFORM_LINUX
 	#include <linux/mmc/sdio_func.h>
 	#include <linux/mmc/sdio_ids.h>
-
-	#if defined(CONFIG_WOWLAN) || defined(CONFIG_AP_WOWLAN) || defined(CONFIG_PLATFORM_SPRD)
-		#include <linux/mmc/host.h>
-		#include <linux/mmc/card.h>
-	#endif
+	#include <linux/mmc/host.h>
+	#include <linux/mmc/card.h>
 
 	#ifdef CONFIG_PLATFORM_SPRD
 		#include <linux/gpio.h>
@@ -45,6 +42,10 @@
 	#include <sdcardddk.h>
 #endif
 
+#define RTW_SDIO_CLK_33M	33000000
+#define RTW_SDIO_CLK_40M	40000000
+#define RTW_SDIO_CLK_80M	80000000
+#define RTW_SDIO_CLK_160M	160000000
 
 typedef struct sdio_data {
 	u8  func_number;
@@ -56,6 +57,9 @@ typedef struct sdio_data {
 #ifdef PLATFORM_LINUX
 	struct sdio_func	*func;
 	_thread_hdl_ sys_sdio_irq_thd;
+	unsigned int clock;
+	unsigned int timing;
+	u8	sd3_bus_mode;
 #endif
 
 #ifdef PLATFORM_OS_XP

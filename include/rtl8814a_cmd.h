@@ -80,6 +80,30 @@
 #define SET_88E_H2CCMD_PWRMODE_PARM_ALL_QUEUE_UAPSD(__pH2CCmd, __Value)	SET_BITS_TO_LE_1BYTE((__pH2CCmd)+3, 0, 8, __Value)
 #define SET_88E_H2CCMD_PWRMODE_PARM_PWR_STATE(__pH2CCmd, __Value)	SET_BITS_TO_LE_1BYTE((__pH2CCmd)+4, 0, 8, __Value)
 
+/*	AP_REQ_TXREP_CMD 0x43	*/
+#define SET_8814A_H2CCMD_TXREP_PARM_STA1(__pH2CCmd, __Value)			SET_BITS_TO_LE_1BYTE(__pH2CCmd, 0, 8, __Value)
+#define SET_8814A_H2CCMD_TXREP_PARM_STA2(__pH2CCmd, __Value)			SET_BITS_TO_LE_1BYTE((__pH2CCmd)+1, 0, 8, __Value)
+#define SET_8814A_H2CCMD_TXREP_PARM_RTY(__pH2CCmd, __Value)				SET_BITS_TO_LE_1BYTE((__pH2CCmd)+2, 0, 2, __Value)
+
+/*		C2H_AP_REQ_TXRPT		*/
+#define	GET_8814A_C2H_TC2H_APREQ_TXRPT_MACID1(_Header)			LE_BITS_TO_1BYTE((_Header + 0), 0, 8)
+#define	GET_8814A_C2H_TC2H_APREQ_TXRPT_TXOK1(_Header)			LE_BITS_TO_2BYTE((_Header + 1), 0, 16)
+#define	GET_8814A_C2H_TC2H_APREQ_TXRPT_TXFAIL1(_Header)			LE_BITS_TO_2BYTE((_Header + 3), 0, 16)
+#define	GET_8814A_C2H_TC2H_APREQ_TXRPT_INIRATE1(_Header)		LE_BITS_TO_1BYTE((_Header + 5), 0, 8)
+#define	GET_8814A_C2H_TC2H_APREQ_TXRPT_MACID2(_Header)			LE_BITS_TO_1BYTE((_Header + 6), 0, 8)
+#define	GET_8814A_C2H_TC2H_APREQ_TXRPT_TXOK2(_Header)			LE_BITS_TO_2BYTE((_Header + 7), 0, 16)
+#define	GET_8814A_C2H_TC2H_APREQ_TXRPT_TXFAIL2(_Header)			LE_BITS_TO_2BYTE((_Header + 9), 0, 16)
+#define	GET_8814A_C2H_TC2H_APREQ_TXRPT_INIRATE2(_Header)		LE_BITS_TO_1BYTE((_Header + 11), 0, 8)
+
+/*		C2H_SPC_STAT			*/
+#define	GET_8814A_C2H_SPC_STAT_IDX(_Header)						LE_BITS_TO_1BYTE((_Header + 0), 0, 8)
+	/*	Tip :TYPE_A data3 is msb and data0 is lsb	*/
+#define	GET_8814A_C2H_SPC_STAT_TYPEA_RETRY(_Header)				LE_BITS_TO_4BYTE((_Header + 1), 0, 32)
+#define	GET_8814A_C2H_SPC_STAT_TYPEB_PKT1(_Header)				LE_BITS_TO_2BYTE((_Header + 1), 0, 16)
+#define	GET_8814A_C2H_SPC_STAT_TYPEB_RETRY1(_Header)			LE_BITS_TO_2BYTE((_Header + 3), 0, 16)
+#define	GET_8814A_C2H_SPC_STAT_TYPEB_PKT2(_Header)				LE_BITS_TO_2BYTE((_Header + 5), 0, 16)
+#define	GET_8814A_C2H_SPC_STAT_TYPEB_RETRY2(_Header)			LE_BITS_TO_2BYTE((_Header + 7), 0, 16)
+
 /*BCNHWSEQ*/
 #define SET_8814A_H2CCMD_BCNHWSEQ_EN(__pH2CCmd, __Value)	SET_BITS_TO_LE_1BYTE((__pH2CCmd), 0, 1, __Value)
 #define SET_8814A_H2CCMD_BCNHWSEQ_BCN_NUMBER(__pH2CCmd, __Value)	SET_BITS_TO_LE_1BYTE((__pH2CCmd), 1, 3, __Value)
@@ -123,6 +147,7 @@ void rtl8814_set_FwJoinBssReport_cmd(PADAPTER padapter, u8 mstatus);
 void rtl8814_set_FwPwrMode_cmd(PADAPTER padapter, u8 PSMode);
 u8 GetTxBufferRsvdPageNum8814(_adapter *padapter, bool wowlan);
 u8 rtl8814_set_rssi_cmd(_adapter *padapter, u8 *param);
+void rtl8814_req_txrpt_cmd(PADAPTER padapter, u8 macid);
 
 #ifdef CONFIG_TDLS
 	#ifdef CONFIG_TDLS_CH_SW
@@ -135,24 +160,11 @@ Set_RA_LDPC_8814(
 	struct sta_info	*psta,
 	BOOLEAN			bLDPC
 );
-int rtl8814_iqk_wait(_adapter *padapter, u32 timeout_ms);
-void rtl8814_iqk_done(_adapter *padapter);
-VOID
-C2HPacketHandler_8814(
-	IN	PADAPTER	Adapter,
-	IN	u8			*Buffer,
-	IN	u8			Length
-);
+
+s32 c2h_handler_8814a(_adapter *adapter, u8 id, u8 seq, u8 plen, u8 *payload);
+
 #ifdef CONFIG_P2P_PS
 	void rtl8814_set_p2p_ps_offload_cmd(PADAPTER padapter, u8 p2p_ps_state);
 #endif /* CONFIG_P2P */
-
-s32
-_C2HContentParsing8814(
-	IN	PADAPTER	Adapter,
-	IN	u8			c2hCmdId,
-	IN	u8			c2hCmdLen,
-	IN	u8			*tmpBuf
-);
 
 #endif/* __RTL8814A_CMD_H__ */

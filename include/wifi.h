@@ -95,6 +95,7 @@ enum WIFI_FRAME_SUBTYPE {
 	WIFI_ACTION_NOACK = (BIT(7) | BIT(6) | BIT(5) | WIFI_MGT_TYPE),
 
 	/* below is for control frame */
+	WIFI_BF_REPORT_POLL = (BIT(6) | WIFI_CTRL_TYPE),
 	WIFI_NDPA         = (BIT(6) | BIT(4) | WIFI_CTRL_TYPE),
 	WIFI_PSPOLL         = (BIT(7) | BIT(5) | WIFI_CTRL_TYPE),
 	WIFI_RTS            = (BIT(7) | BIT(5) | BIT(4) | WIFI_CTRL_TYPE),
@@ -368,13 +369,15 @@ enum WIFI_REG_DOMAIN {
 		*(unsigned short *)(pbuf) |= __constant_cpu_to_le16(type); \
 	} while (0)
 
-#define GetFrameSubType(pbuf)	(cpu_to_le16(*(unsigned short *)(pbuf)) & (BIT(7) | BIT(6) | BIT(5) | BIT(4) | BIT(3) | BIT(2)))
+#define get_frame_sub_type(pbuf)	(cpu_to_le16(*(unsigned short *)(pbuf)) & (BIT(7) | BIT(6) | BIT(5) | BIT(4) | BIT(3) | BIT(2)))
 
-#define SetFrameSubType(pbuf, type) \
+
+#define set_frame_sub_type(pbuf, type) \
 	do {    \
 		*(unsigned short *)(pbuf) &= cpu_to_le16(~(BIT(7) | BIT(6) | BIT(5) | BIT(4) | BIT(3) | BIT(2))); \
 		*(unsigned short *)(pbuf) |= cpu_to_le16(type); \
 	} while (0)
+
 
 #define GetSequence(pbuf)	(cpu_to_le16(*(unsigned short *)((SIZE_PTR)(pbuf) + 22)) >> 4)
 
@@ -396,7 +399,7 @@ enum WIFI_REG_DOMAIN {
 			le16_to_cpu((unsigned short)(0xfff0 & (num << 4))); \
 	} while (0)
 
-#define SetDuration(pbuf, dur) \
+#define set_duration(pbuf, dur) \
 	do {    \
 		*(unsigned short *)((SIZE_PTR)(pbuf) + 2) = cpu_to_le16(0xffff & (dur)); \
 	} while (0)
@@ -434,11 +437,12 @@ enum WIFI_REG_DOMAIN {
 
 #define GetAddr1Ptr(pbuf)	((unsigned char *)((SIZE_PTR)(pbuf) + 4))
 
-#define GetAddr2Ptr(pbuf)	((unsigned char *)((SIZE_PTR)(pbuf) + 10))
+#define get_addr2_ptr(pbuf)	((unsigned char *)((SIZE_PTR)(pbuf) + 10))
 
 #define GetAddr3Ptr(pbuf)	((unsigned char *)((SIZE_PTR)(pbuf) + 16))
 
 #define GetAddr4Ptr(pbuf)	((unsigned char *)((SIZE_PTR)(pbuf) + 24))
+
 
 #define MacAddr_isBcst(addr) \
 	(\
@@ -464,7 +468,7 @@ __inline static unsigned char *get_ra(unsigned char *pframe)
 __inline static unsigned char *get_ta(unsigned char *pframe)
 {
 	unsigned char	*ta;
-	ta = GetAddr2Ptr(pframe);
+	ta = get_addr2_ptr(pframe);
 	return ta;
 }
 
@@ -499,13 +503,13 @@ __inline static unsigned char *get_sa(unsigned char *pframe)
 
 	switch (to_fr_ds) {
 	case 0x00:	/* ToDs=0, FromDs=0 */
-		sa = GetAddr2Ptr(pframe);
+		sa = get_addr2_ptr(pframe);
 		break;
 	case 0x01:	/* ToDs=0, FromDs=1 */
 		sa = GetAddr3Ptr(pframe);
 		break;
 	case 0x02:	/* ToDs=1, FromDs=0 */
-		sa = GetAddr2Ptr(pframe);
+		sa = get_addr2_ptr(pframe);
 		break;
 	default:	/* ToDs=1, FromDs=1 */
 		sa = GetAddr4Ptr(pframe);
@@ -525,7 +529,7 @@ __inline static unsigned char *get_hdr_bssid(unsigned char *pframe)
 		sa = GetAddr3Ptr(pframe);
 		break;
 	case 0x01:	/* ToDs=0, FromDs=1 */
-		sa = GetAddr2Ptr(pframe);
+		sa = get_addr2_ptr(pframe);
 		break;
 	case 0x02:	/* ToDs=1, FromDs=0 */
 		sa = GetAddr1Ptr(pframe);
@@ -589,6 +593,7 @@ __inline static int IsFrameTypeCtrl(unsigned char *pframe)
 #define _EXT_SUPPORTEDRATES_IE_	50
 
 #define _HT_CAPABILITY_IE_			45
+#define _MDIE_						54
 #define _FTIE_						55
 #define _TIMEOUT_ITVL_IE_			56
 #define _SRC_IE_				59
@@ -753,10 +758,12 @@ typedef	enum _ELEMENT_ID {
 
 /* #ifdef CONFIG_80211N_HT */
 
-#define SetOrderBit(pbuf)	\
+#define set_order_bit(pbuf)	\
 		do	{	\
 			*(unsigned short *)(pbuf) |= cpu_to_le16(_ORDER_); \
 		} while (0)
+
+
 
 #define GetOrderBit(pbuf)	(((*(unsigned short *)(pbuf)) & le16_to_cpu(_ORDER_)) != 0)
 
@@ -1146,7 +1153,7 @@ typedef enum _HT_CAP_AMPDU_DENSITY {
 #define	P2P_ATTR_LISTEN_CH				0x06
 #define	P2P_ATTR_GROUP_BSSID				0x07
 #define	P2P_ATTR_EX_LISTEN_TIMING		0x08
-#define	P2P_ATTR_INTENTED_IF_ADDR		0x09
+#define	P2P_ATTR_INTENDED_IF_ADDR		0x09
 #define	P2P_ATTR_MANAGEABILITY			0x0A
 #define	P2P_ATTR_CH_LIST					0x0B
 #define	P2P_ATTR_NOA						0x0C
@@ -1307,6 +1314,7 @@ enum P2P_PROTO_WK_ID {
 	P2P_PRE_TX_INVITEREQ_PROCESS_WK = 4,
 	P2P_AP_P2P_CH_SWITCH_PROCESS_WK = 5,
 	P2P_RO_CH_WK = 6,
+	P2P_CANCEL_RO_CH_WK = 7,
 };
 
 #ifdef CONFIG_P2P_PS

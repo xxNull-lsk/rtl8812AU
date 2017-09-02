@@ -36,7 +36,7 @@ void MPh2c_timeout_handle(void *FunctionContext)
 	RTW_INFO("[MPT], MPh2c_timeout_handle\n");
 
 	pAdapter = (PADAPTER)FunctionContext;
-	pMptCtx = &pAdapter->mppriv.MptCtx;
+	pMptCtx = &pAdapter->mppriv.mpt_ctx;
 
 	pMptCtx->bMPh2c_timeout = _TRUE;
 
@@ -48,7 +48,7 @@ void MPh2c_timeout_handle(void *FunctionContext)
 
 u32 WaitC2Hevent(PADAPTER pAdapter, u8 *C2H_event, u32 delay_time)
 {
-	PMPT_CONTEXT		pMptCtx = &(pAdapter->mppriv.MptCtx);
+	PMPT_CONTEXT		pMptCtx = &(pAdapter->mppriv.mpt_ctx);
 	pMptCtx->bMPh2c_timeout = _FALSE;
 
 	if (pAdapter->registrypriv.mp_mode == 0) {
@@ -107,7 +107,7 @@ mptbt_SendH2c(
 {
 	/* KIRQL				OldIrql = KeGetCurrentIrql(); */
 	BT_CTRL_STATUS	h2cStatus = BT_STATUS_H2C_SUCCESS;
-	PMPT_CONTEXT		pMptCtx = &(Adapter->mppriv.MptCtx);
+	PMPT_CONTEXT		pMptCtx = &(Adapter->mppriv.mpt_ctx);
 	u1Byte				i;
 
 	RTW_INFO("[MPT], mptbt_SendH2c()=========>\n");
@@ -205,7 +205,7 @@ mptbt_BtFwOpCodeProcess(
 {
 	u1Byte				H2C_Parameter[6] = {0};
 	PBT_H2C				pH2c = (PBT_H2C)&H2C_Parameter[0];
-	PMPT_CONTEXT		pMptCtx = &(Adapter->mppriv.MptCtx);
+	PMPT_CONTEXT		pMptCtx = &(Adapter->mppriv.mpt_ctx);
 	PBT_EXT_C2H			pExtC2h = (PBT_EXT_C2H)&pMptCtx->c2hBuf[0];
 	u2Byte				paraLen = 0, i;
 	BT_CTRL_STATUS	h2cStatus = BT_STATUS_H2C_SUCCESS, c2hStatus = BT_STATUS_C2H_SUCCESS;
@@ -266,7 +266,7 @@ mptbt_BtReady(
 	u1Byte				retStatus = BT_STATUS_BT_OP_SUCCESS;
 	u1Byte				btOpcode;
 	u1Byte				btOpcodeVer = 0;
-	PMPT_CONTEXT		pMptCtx = &(Adapter->mppriv.MptCtx);
+	PMPT_CONTEXT		pMptCtx = &(Adapter->mppriv.mpt_ctx);
 	PBT_EXT_C2H			pExtC2h = (PBT_EXT_C2H)&pMptCtx->c2hBuf[0];
 	u1Byte				i;
 	u1Byte				btFwVer = 0, bdAddr[6] = {0};
@@ -353,16 +353,16 @@ mptbt_BtReady(
 
 void mptbt_close_WiFiRF(PADAPTER Adapter)
 {
-	PHY_SetBBReg(Adapter, 0x824, 0xF, 0x0);
-	PHY_SetBBReg(Adapter, 0x824, 0x700000, 0x0);
-	PHY_SetRFReg(Adapter, RF_PATH_A, 0x0, 0xF0000, 0x0);
+	phy_set_bb_reg(Adapter, 0x824, 0xF, 0x0);
+	phy_set_bb_reg(Adapter, 0x824, 0x700000, 0x0);
+	phy_set_rf_reg(Adapter, RF_PATH_A, 0x0, 0xF0000, 0x0);
 }
 
 void mptbt_open_WiFiRF(PADAPTER	Adapter)
 {
-	PHY_SetBBReg(Adapter, 0x824, 0x700000, 0x3);
-	PHY_SetBBReg(Adapter, 0x824, 0xF, 0x2);
-	PHY_SetRFReg(Adapter, RF_PATH_A, 0x0, 0xF0000, 0x3);
+	phy_set_bb_reg(Adapter, 0x824, 0x700000, 0x3);
+	phy_set_bb_reg(Adapter, 0x824, 0xF, 0x2);
+	phy_set_rf_reg(Adapter, RF_PATH_A, 0x0, 0xF0000, 0x3);
 }
 
 u4Byte mptbt_switch_RF(PADAPTER	Adapter, u1Byte	Enter)
@@ -468,7 +468,7 @@ MPTBT_FwC2hBtMpCtrl(
 )
 {
 	u32 i;
-	PMPT_CONTEXT	pMptCtx = &(Adapter->mppriv.MptCtx);
+	PMPT_CONTEXT	pMptCtx = &(Adapter->mppriv.mpt_ctx);
 	PBT_EXT_C2H pExtC2h = (PBT_EXT_C2H)tmpBuf;
 
 	if (Adapter->bBTFWReady == _FALSE || Adapter->registrypriv.mp_mode == 0) {
@@ -537,7 +537,7 @@ mptbt_BtGetGeneral(
 	IN	PBT_RSP_CMD	pBtRsp
 )
 {
-	PMPT_CONTEXT		pMptCtx = &(Adapter->mppriv.MptCtx);
+	PMPT_CONTEXT		pMptCtx = &(Adapter->mppriv.mpt_ctx);
 	PBT_EXT_C2H		pExtC2h = (PBT_EXT_C2H)&pMptCtx->c2hBuf[0];
 	u1Byte				h2cParaBuf[6] = {0};
 	u1Byte				h2cParaLen = 0;
@@ -1512,7 +1512,7 @@ mptbt_BtControlProcess(
 {
 	u1Byte			H2C_Parameter[6] = {0};
 	PBT_H2C		pH2c = (PBT_H2C)&H2C_Parameter[0];
-	PMPT_CONTEXT	pMptCtx = &(Adapter->mppriv.MptCtx);
+	PMPT_CONTEXT	pMptCtx = &(Adapter->mppriv.mpt_ctx);
 	PBT_REQ_CMD	pBtReq = (PBT_REQ_CMD)pInBuf;
 	PBT_RSP_CMD	pBtRsp;
 	u1Byte			i;

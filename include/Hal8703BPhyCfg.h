@@ -127,9 +127,9 @@ PHY_SetSwChnlBWMode8703B(
 	IN	u8					Offset80
 );
 
-VOID PHY_SetRFPathSwitch_8703B(
+VOID phy_set_rf_path_switch_8703b(
 	IN	PADAPTER	pAdapter,
-	IN	BOOLEAN		bMain
+	IN	bool		bMain
 );
 
 /*--------------------------Exported Function prototype End---------------------*/

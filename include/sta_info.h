@@ -27,6 +27,11 @@
 #ifndef CONFIG_RTW_MACADDR_ACL
 	#define CONFIG_RTW_MACADDR_ACL 1
 #endif
+
+#ifndef CONFIG_RTW_PRE_LINK_STA
+	#define CONFIG_RTW_PRE_LINK_STA 0
+#endif
+
 #define NUM_ACL 16
 #define RTW_ACL_MODE_DISABLED				0
 #define RTW_ACL_MODE_ACCEPT_UNLESS_LISTED	1
@@ -37,6 +42,21 @@
 extern const char *const _acl_mode_str[];
 #define acl_mode_str(mode) (((mode) >= RTW_ACL_MODE_MAX) ? _acl_mode_str[RTW_ACL_MODE_DISABLED] : _acl_mode_str[(mode)])
 #endif
+
+#ifndef RTW_PRE_LINK_STA_NUM
+	#define RTW_PRE_LINK_STA_NUM 8
+#endif
+
+struct pre_link_sta_node_t {
+	u8 valid;
+	u8 addr[ETH_ALEN];
+};
+
+struct pre_link_sta_ctl_t {
+	_lock lock;
+	u8 num;
+	struct pre_link_sta_node_t node[RTW_PRE_LINK_STA_NUM];
+};
 
 #ifdef CONFIG_TDLS
 #define MAX_ALLOWED_TDLS_STA_NUM	4
@@ -73,15 +93,16 @@ struct wlan_acl_pool {
 };
 
 typedef struct _RSSI_STA {
-	s32	UndecoratedSmoothedPWDB;
-	s32	UndecoratedSmoothedCCK;
-	s32	UndecoratedSmoothedOFDM;
-	u8	OFDM_pkt;
-	u8	CCK_pkt;
-	u16	CCK_sum_power;
-	u8	bsend_rssi;
-	u64	PacketMap;
-	u8	ValidBit;
+
+	s32 undecorated_smoothed_pwdb;
+	s32 undecorated_smoothed_cck;
+	s32 undecorated_smoothed_ofdm;
+	u8 ofdm_pkt;
+	u8 cck_pkt;
+	u16 cck_sum_power;
+	u8 is_send_rssi;
+	u64 packet_map;
+	u8 valid_bit;
 } RSSI_STA, *PRSSI_STA;
 
 struct	stainfo_stats	{
@@ -94,6 +115,7 @@ struct	stainfo_stats	{
 		u64 rx_probersp_uo_pkts;
 	u64 rx_ctrl_pkts;
 	u64 rx_data_pkts;
+	u64 rx_data_last_pkts;		/* For Read & Clear requirement in proc_get_rx_stat() */
 	u64 rx_data_qos_pkts[TID_NUM];
 	u64	last_rx_mgnt_pkts;
 		u64 last_rx_beacon_pkts;
@@ -114,6 +136,12 @@ struct	stainfo_stats	{
 	u64	tx_pkts;
 	u64	tx_bytes;
 	u64  tx_drops;
+
+	u32 duplicate_cnt;	/* Read & Clear, in proc_get_rx_stat() */
+	u32 rxratecnt[128];	/* Read & Clear, in proc_get_rx_stat() */
+	u32 tx_ok_cnt;		/* Read & Clear, in proc_get_tx_stat() */
+	u32 tx_fail_cnt;	/* Read & Clear, in proc_get_tx_stat() */
+	u32 tx_retry_cnt;	/* Read & Clear, in proc_get_tx_stat() */
 };
 
 #ifndef DBG_SESSION_TRACKER
@@ -336,6 +364,9 @@ struct sta_info {
 	int wpa2_pairwise_cipher;
 
 	u8 bpairwise_key_installed;
+#ifdef CONFIG_RTW_80211R
+	u8 ft_pairwise_key_installed;
+#endif
 
 #ifdef CONFIG_NATIVEAP_MLME
 	u8 wpa_ie[32];
@@ -425,6 +456,9 @@ struct sta_info {
 	u8		RXSNR[4];
 
 	u8		rssi_level;			/* for Refresh RA mask */
+#ifdef CONFIG_LPS_PG
+	u8		lps_pg_rssi_lv;
+#endif
 	/* ODM Write */
 	/* 1 TX_INFO (may changed by IC) */
 	/* TX_INFO_T		pTxInfo;				 */ /* Define in IC folder. Move lower layer. */
@@ -576,12 +610,17 @@ struct	sta_priv {
 	struct wlan_acl_pool acl_list;
 #endif
 
-#endif
+	#if CONFIG_RTW_PRE_LINK_STA
+	struct pre_link_sta_ctl_t pre_link_sta_ctl;
+	#endif
+
+#endif /* CONFIG_AP_MODE */
 
 #ifdef CONFIG_ATMEL_RC_PATCH
 	u8 atmel_rc_pattern[6];
 #endif
-
+	struct sta_info *c2h_sta;
+	struct submit_ctx *gotc2h;
 };
 
 
@@ -621,5 +660,15 @@ extern struct sta_info *rtw_get_bcmc_stainfo(_adapter *padapter);
 extern u8 rtw_access_ctrl(_adapter *adapter, u8 *mac_addr);
 void dump_macaddr_acl(void *sel, _adapter *adapter);
 #endif
+
+bool rtw_is_pre_link_sta(struct sta_priv *stapriv, u8 *addr);
+#if CONFIG_RTW_PRE_LINK_STA
+struct sta_info *rtw_pre_link_sta_add(struct sta_priv *stapriv, u8 *hwaddr);
+void rtw_pre_link_sta_del(struct sta_priv *stapriv, u8 *hwaddr);
+void rtw_pre_link_sta_ctl_reset(struct sta_priv *stapriv);
+void rtw_pre_link_sta_ctl_init(struct sta_priv *stapriv);
+void rtw_pre_link_sta_ctl_deinit(struct sta_priv *stapriv);
+void dump_pre_link_sta_ctl(void *sel, struct sta_priv *stapriv);
+#endif /* CONFIG_RTW_PRE_LINK_STA */
 
 #endif /* _STA_INFO_H_ */

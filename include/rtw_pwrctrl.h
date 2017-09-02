@@ -48,10 +48,10 @@
 #ifdef CONFIG_DEFAULT_PATTERNS_EN
 	#ifdef CONFIG_PLATFORM_ANDROID_INTEL_X86
 		/* TCP/ICMP/UDP multicast with specific IP addr */
-		#define DEFAULT_PATTERN_NUM 3
+		#define DEFAULT_PATTERN_NUM 4
 	#else
 		/* TCP/ICMP */
-		#define DEFAULT_PATTERN_NUM 2
+		#define DEFAULT_PATTERN_NUM 3
 	#endif
 #else
 	#define DEFAULT_PATTERN_NUM 0
@@ -96,6 +96,13 @@ enum Power_Mgnt {
 	PM_Radio_Off			,
 	PM_Card_Disable		,
 	PS_MODE_NUM,
+};
+
+enum lps_level {
+	LPS_NORMAL = 0,
+	LPS_LCLK,
+	LPS_PG,
+	LPS_LEVEL_MAX,
 };
 
 #ifdef CONFIG_PNO_SUPPORT
@@ -234,6 +241,7 @@ typedef enum _PS_DENY_REASON {
 	PS_DENY_IOCTL,
 	PS_DENY_MGNT_TX,
 	PS_DENY_MONITOR_MODE,
+	PS_DENY_BEAMFORMING,		/* Beamforming */
 	PS_DENY_DRV_REMOVE = 30,
 	PS_DENY_OTHERS = 31
 } PS_DENY_REASON;
@@ -298,15 +306,13 @@ typedef struct lps_poff_info {
 } lps_poff_info_t;
 #endif /*CONFIG_LPS_POFF*/
 
-#ifdef CONFIG_WOW_PATTERN_HW_CAM
 struct aoac_report {
 	u8 iv[8];
 	u8 replay_counter_eapol_key[8];
 	u8 group_key[32];
 	u8 key_index;
-	u8 scurity_type;
+	u8 security_type;
 };
-#endif
 
 struct pwrctrl_priv {
 	_pwrlock	lock;
@@ -388,12 +394,13 @@ struct pwrctrl_priv {
 	u8		is_high_active;
 #endif /* CONFIG_GPIO_WAKEUP */
 #ifdef CONFIG_WOWLAN
+	u8		wowlan_ns_offload_en;
 	u8		wowlan_txpause_status;
 	u8		wowlan_pattern_idx;
+	u8		wowlan_in_resume;
 	u64		wowlan_fw_iv;
 	struct rtl_priv_pattern	patterns[MAX_WKFM_CAM_NUM];
 #ifdef CONFIG_PNO_SUPPORT
-	u8		pno_in_resume;
 	u8		pno_inited;
 	pno_nlo_info_t	*pnlo_info;
 	pno_scan_info_t	*pscan_info;
@@ -401,10 +408,10 @@ struct pwrctrl_priv {
 #endif /* CONFIG_PNO_SUPPORT */
 #ifdef CONFIG_WOW_PATTERN_HW_CAM
 	_mutex	wowlan_pattern_cam_mutex;
+#endif
 	u8		wowlan_aoac_rpt_loc;
 	struct aoac_report wowlan_aoac_rpt;
-#endif
-
+	u8		wowlan_dis_lps;/*for debug purpose*/
 #endif /* CONFIG_WOWLAN */
 	_timer	pwr_state_check_timer;
 	int		pwr_state_check_interval;
@@ -444,11 +451,13 @@ struct pwrctrl_priv {
 #ifdef CONFIG_LPS_POFF
 	lps_poff_info_t	*plps_poff_info;
 #endif
-
+	u8 lps_level_bk;
+	u8 lps_level; /*LPS_NORMAL,LPA_CG,LPS_PG*/
 #ifdef CONFIG_LPS_PG
 	u8 lpspg_rsvd_page_locate;
 	u8 blpspg_info_up;
 #endif
+	u8 current_lps_hw_port_id;
 };
 
 #define rtw_get_ips_mode_req(pwrctl) \
@@ -515,6 +524,7 @@ void traffic_check_for_leave_lps(PADAPTER padapter, u8 tx, u32 tx_packets);
 void rtw_set_ps_mode(PADAPTER padapter, u8 ps_mode, u8 smart_ps, u8 bcn_ant_mode, const char *msg);
 void rtw_set_fw_in_ips_mode(PADAPTER padapter, u8 enable);
 void rtw_set_rpwm(_adapter *padapter, u8 val8);
+void rtw_wow_lps_level_decide(_adapter *adapter, u8 wow_en);
 #endif
 
 #ifdef CONFIG_RESUME_IN_WORKQUEUE
@@ -542,6 +552,7 @@ int _rtw_pwr_wakeup(_adapter *padapter, u32 ips_deffer_ms, const char *caller);
 #define rtw_pwr_wakeup_ex(adapter, ips_deffer_ms) _rtw_pwr_wakeup(adapter, ips_deffer_ms, __FUNCTION__)
 int rtw_pm_set_ips(_adapter *padapter, u8 mode);
 int rtw_pm_set_lps(_adapter *padapter, u8 mode);
+int rtw_pm_set_lps_level(_adapter *padapter, u8 level);
 
 void rtw_ps_deny(PADAPTER padapter, PS_DENY_REASON reason);
 void rtw_ps_deny_cancel(PADAPTER padapter, PS_DENY_REASON reason);
@@ -550,7 +561,6 @@ u32 rtw_ps_deny_get(PADAPTER padapter);
 #if defined(CONFIG_WOWLAN)
 void rtw_get_current_ip_address(PADAPTER padapter, u8 *pcurrentip);
 void rtw_get_sec_iv(PADAPTER padapter, u8 *pcur_dot11txpn, u8 *StaAddr);
-void rtw_set_sec_pn(_adapter *padapter);
 bool rtw_check_pattern_valid(u8 *input, u8 len);
 bool rtw_wowlan_parser_pattern_cmd(u8 *input, char *pattern,
 				int *pattern_len, char *bit_mask);

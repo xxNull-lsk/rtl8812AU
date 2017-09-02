@@ -724,7 +724,7 @@ void usb_read_port_complete(struct urb *purb, struct pt_regs *regs)
 			 , __func__
 			 , rtw_is_drv_stopped(padapter) ? "True" : "False"
 			, rtw_is_surprise_removed(padapter) ? "True" : "False");
-		goto exit;
+		return;
 	}
 
 	if (purb->status == 0) {
@@ -777,8 +777,6 @@ void usb_read_port_complete(struct urb *purb, struct pt_regs *regs)
 			break;
 		}
 	}
-
-exit:
 
 }
 

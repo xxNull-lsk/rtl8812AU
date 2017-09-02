@@ -21,5 +21,6 @@
 #define __HAL_DM_H__
 
 void Init_ODM_ComInfo(_adapter *adapter);
+void rtw_hal_turbo_edca(_adapter *adapter);
 
 #endif /* __HAL_DM_H__ */

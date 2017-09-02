@@ -41,6 +41,8 @@
 #define REG_BCN_CTRL_1		REG_BCN_CTRL_CLINT0_8822B	/* hal_com.c */
 #define REG_TSFTR1		REG_FREERUN_CNT_8822B	/* hal_com.c */
 #define REG_RXFLTMAP2		REG_RXFLTMAP_8822B	/* rtw_mp.c */
+#define REG_WOWLAN_WAKE_REASON	0x01C7 /* hal_com.c */
+#define REG_GPIO_PIN_CTRL_2		REG_GPIO_EXT_CTRL_8822B		/* hal_com.c */
 
 /* RXERR_RPT, for rtw_mp.c */
 #define RXERR_TYPE_OFDM_PPDU		0

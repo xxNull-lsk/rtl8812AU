@@ -131,9 +131,11 @@ typedef struct _RT_FIRMWARE_8192E {
  * Beacon:2, PS-Poll:1, Null Data:1,Prob Rsp:1,Qos Null Data:1 */
 #define RSVD_PAGE_NUM_8192E		0x08
 /* For WoWLan , more reserved page
- * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:2,GTK EXT MEM:2, PNO: 6 */
+ * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:2,GTK EXT MEM:2, AOAC rpt: 1,PNO: 6
+ * NS offload: 2 NDP info: 1
+ */
 #ifdef CONFIG_WOWLAN
-	#define WOWLAN_PAGE_NUM_8192E	0x07
+	#define WOWLAN_PAGE_NUM_8192E	0x0b
 #else
 	#define WOWLAN_PAGE_NUM_8192E	0x00
 #endif

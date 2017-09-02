@@ -110,32 +110,32 @@ phy_RFSerialRead(
 	/* <20120809, Kordan> CCA OFF(when entering), asked by James to avoid reading the wrong value. */
 	/* <20120828, Kordan> Toggling CCA would affect RF 0x0, skip it! */
 	if (Offset != 0x0 &&  !(IS_VENDOR_8812A_C_CUT(Adapter) || IS_HARDWARE_TYPE_8821(Adapter)))
-		PHY_SetBBReg(Adapter, rCCAonSec_Jaguar, 0x8, 1);
+		phy_set_bb_reg(Adapter, rCCAonSec_Jaguar, 0x8, 1);
 
 	Offset &= 0xff;
 
 	if (eRFPath == RF_PATH_A)
-		bIsPIMode = (BOOLEAN)PHY_QueryBBReg(Adapter, 0xC00, 0x4);
+		bIsPIMode = (BOOLEAN)phy_query_bb_reg(Adapter, 0xC00, 0x4);
 	else if (eRFPath == RF_PATH_B)
-		bIsPIMode = (BOOLEAN)PHY_QueryBBReg(Adapter, 0xE00, 0x4);
+		bIsPIMode = (BOOLEAN)phy_query_bb_reg(Adapter, 0xE00, 0x4);
 
-	PHY_SetBBReg(Adapter, pPhyReg->rfHSSIPara2, bHSSIRead_addr_Jaguar, Offset);
+	phy_set_bb_reg(Adapter, pPhyReg->rfHSSIPara2, bHSSIRead_addr_Jaguar, Offset);
 
 	if (IS_VENDOR_8812A_C_CUT(Adapter) || IS_HARDWARE_TYPE_8821(Adapter))
 		rtw_udelay_os(20);
 
 	if (bIsPIMode) {
-		retValue = PHY_QueryBBReg(Adapter, pPhyReg->rfLSSIReadBackPi, rRead_data_Jaguar);
+		retValue = phy_query_bb_reg(Adapter, pPhyReg->rfLSSIReadBackPi, rRead_data_Jaguar);
 		/* RTW_INFO("[PI mode] RFR-%d Addr[0x%x]=0x%x\n", eRFPath, pPhyReg->rfLSSIReadBackPi, retValue); */
 	} else {
-		retValue = PHY_QueryBBReg(Adapter, pPhyReg->rfLSSIReadBack, rRead_data_Jaguar);
+		retValue = phy_query_bb_reg(Adapter, pPhyReg->rfLSSIReadBack, rRead_data_Jaguar);
 		/* RTW_INFO("[SI mode] RFR-%d Addr[0x%x]=0x%x\n", eRFPath, pPhyReg->rfLSSIReadBack, retValue); */
 	}
 
 	/* <20120809, Kordan> CCA ON(when exiting), asked by James to avoid reading the wrong value. */
 	/* <20120828, Kordan> Toggling CCA would affect RF 0x0, skip it! */
 	if (Offset != 0x0 &&  !(IS_VENDOR_8812A_C_CUT(Adapter) || IS_HARDWARE_TYPE_8821(Adapter)))
-		PHY_SetBBReg(Adapter, rCCAonSec_Jaguar, 0x8, 0);
+		phy_set_bb_reg(Adapter, rCCAonSec_Jaguar, 0x8, 0);
 
 	_exit_critical_mutex(&(adapter_to_dvobj(Adapter)->rf_read_reg_mutex), NULL);
 	return retValue;
@@ -171,7 +171,7 @@ phy_RFSerialWrite(
 
 	/* Write Operation */
 	/* TODO: Dynamically determine whether using PI or SI to write RF registers. */
-	PHY_SetBBReg(Adapter, pPhyReg->rf3wireOffset, bMaskDWord, DataAndAddr);
+	phy_set_bb_reg(Adapter, pPhyReg->rf3wireOffset, bMaskDWord, DataAndAddr);
 	/* RTW_INFO("RFW-%d Addr[0x%x]=0x%x\n", eRFPath, pPhyReg->rf3wireOffset, DataAndAddr); */
 
 }
@@ -244,7 +244,7 @@ s32 PHY_MACConfig8812(PADAPTER Adapter)
 #endif
 	{
 #ifdef CONFIG_EMBEDDED_FWIMG
-		ODM_ConfigMACWithHeaderFile(&pHalData->odmpriv);
+		odm_config_mac_with_header_file(&pHalData->odmpriv);
 		rtStatus = _SUCCESS;
 #endif/* CONFIG_EMBEDDED_FWIMG */
 	}
@@ -291,20 +291,20 @@ PHY_BB8812_Config_1T(
 )
 {
 	/* BB OFDM RX Path_A */
-	PHY_SetBBReg(Adapter, rRxPath_Jaguar, bRxPath_Jaguar, 0x11);
+	phy_set_bb_reg(Adapter, rRxPath_Jaguar, bRxPath_Jaguar, 0x11);
 	/* BB OFDM TX Path_A */
-	PHY_SetBBReg(Adapter, rTxPath_Jaguar, bMaskLWord, 0x1111);
+	phy_set_bb_reg(Adapter, rTxPath_Jaguar, bMaskLWord, 0x1111);
 	/* BB CCK R/Rx Path_A */
-	PHY_SetBBReg(Adapter, rCCK_RX_Jaguar, bCCK_RX_Jaguar, 0x0);
+	phy_set_bb_reg(Adapter, rCCK_RX_Jaguar, bCCK_RX_Jaguar, 0x0);
 	/* MCS support */
-	PHY_SetBBReg(Adapter, 0x8bc, 0xc0000060, 0x4);
+	phy_set_bb_reg(Adapter, 0x8bc, 0xc0000060, 0x4);
 	/* RF Path_B HSSI OFF */
-	PHY_SetBBReg(Adapter, 0xe00, 0xf, 0x4);
+	phy_set_bb_reg(Adapter, 0xe00, 0xf, 0x4);
 	/* RF Path_B Power Down */
-	PHY_SetBBReg(Adapter, 0xe90, bMaskDWord, 0);
+	phy_set_bb_reg(Adapter, 0xe90, bMaskDWord, 0);
 	/* ADDA Path_B OFF */
-	PHY_SetBBReg(Adapter, 0xe60, bMaskDWord, 0);
-	PHY_SetBBReg(Adapter, 0xe64, bMaskDWord, 0);
+	phy_set_bb_reg(Adapter, 0xe60, bMaskDWord, 0);
+	phy_set_bb_reg(Adapter, 0xe64, bMaskDWord, 0);
 }
 
 
@@ -322,7 +322,7 @@ phy_BB8812_Config_ParaFile(
 #endif
 	{
 #ifdef CONFIG_EMBEDDED_FWIMG
-		if (HAL_STATUS_SUCCESS != ODM_ConfigBBWithHeaderFile(&pHalData->odmpriv, CONFIG_BB_PHY_REG))
+		if (HAL_STATUS_SUCCESS != odm_config_bb_with_header_file(&pHalData->odmpriv, CONFIG_BB_PHY_REG))
 			rtStatus = _FAIL;
 #endif
 	}
@@ -340,7 +340,7 @@ phy_BB8812_Config_ParaFile(
 #endif
 		{
 #ifdef CONFIG_EMBEDDED_FWIMG
-			if (HAL_STATUS_SUCCESS != ODM_ConfigBBWithHeaderFile(&pHalData->odmpriv, CONFIG_BB_PHY_REG_MP))
+			if (HAL_STATUS_SUCCESS != odm_config_bb_with_header_file(&pHalData->odmpriv, CONFIG_BB_PHY_REG_MP))
 				rtStatus = _FAIL;
 #endif
 		}
@@ -358,7 +358,7 @@ phy_BB8812_Config_ParaFile(
 #endif
 	{
 #ifdef CONFIG_EMBEDDED_FWIMG
-		if (HAL_STATUS_SUCCESS != ODM_ConfigBBWithHeaderFile(&pHalData->odmpriv, CONFIG_BB_AGC_TAB))
+		if (HAL_STATUS_SUCCESS != odm_config_bb_with_header_file(&pHalData->odmpriv, CONFIG_BB_AGC_TAB))
 			rtStatus = _FAIL;
 #endif
 	}
@@ -406,7 +406,7 @@ PHY_BBConfig8812(
 	/*  */
 	rtStatus = phy_BB8812_Config_ParaFile(Adapter);
 
-	hal_set_crystal_cap(Adapter, pHalData->CrystalCap);
+	hal_set_crystal_cap(Adapter, pHalData->crystal_cap);
 
 	if (IS_HARDWARE_TYPE_JAGUAR(Adapter))
 		pHalData->Reg837 = rtw_read8(Adapter, 0x837);
@@ -455,10 +455,10 @@ PHY_TxPowerTrainingByPath_8812(
 
 	writeData = 0;
 	if (RfPath == ODM_RF_PATH_A) {
-		PowerLevel = PHY_GetTxPowerIndex(Adapter, ODM_RF_PATH_A, MGN_MCS7, BandWidth, Channel);
+		PowerLevel = phy_get_tx_power_index(Adapter, ODM_RF_PATH_A, MGN_MCS7, BandWidth, Channel);
 		writeOffset =  rA_TxPwrTraing_Jaguar;
 	} else {
-		PowerLevel = PHY_GetTxPowerIndex(Adapter, ODM_RF_PATH_B, MGN_MCS7, BandWidth, Channel);
+		PowerLevel = phy_get_tx_power_index(Adapter, ODM_RF_PATH_B, MGN_MCS7, BandWidth, Channel);
 		writeOffset =  rB_TxPwrTraing_Jaguar;
 	}
 
@@ -472,7 +472,7 @@ PHY_TxPowerTrainingByPath_8812(
 		writeData |= (((PowerLevel > 2) ? (PowerLevel) : 2) << (i * 8));
 	}
 
-	PHY_SetBBReg(Adapter, writeOffset, 0xffffff, writeData);
+	phy_set_bb_reg(Adapter, writeOffset, 0xffffff, writeData);
 }
 
 VOID
@@ -509,8 +509,8 @@ PHY_SetTxPowerLevel8812(
 	/* RTW_INFO("==>PHY_SetTxPowerLevel8812()\n"); */
 
 	for (path = ODM_RF_PATH_A; path < pHalData->NumTotalRFPath; ++path) {
-		PHY_SetTxPowerLevelByPath(Adapter, Channel, path);
-		PHY_TxPowerTrainingByPath_8812(Adapter, pHalData->CurrentChannelBW, Channel, path);
+		phy_set_tx_power_level_by_path(Adapter, Channel, path);
+		PHY_TxPowerTrainingByPath_8812(Adapter, pHalData->current_channel_bw, Channel, path);
 	}
 
 	/* RTW_INFO("<==PHY_SetTxPowerLevel8812()\n"); */
@@ -579,7 +579,7 @@ PHY_GetTxPowerIndex_8812A(
 #endif
 #endif
 
-	limit = PHY_GetTxPowerLimit(pAdapter, pAdapter->registrypriv.RegPwrTblSel, (u8)(!bIn24G), pHalData->CurrentChannelBW, RFPath, Rate, pHalData->CurrentChannel);
+	limit = PHY_GetTxPowerLimit(pAdapter, pAdapter->registrypriv.RegPwrTblSel, (u8)(!bIn24G), pHalData->current_channel_bw, RFPath, Rate, pHalData->current_channel);
 
 	tpt_offset = PHY_GetTxPowerTrackingOffset(pAdapter, RFPath, Rate);
 
@@ -597,7 +597,7 @@ PHY_GetTxPowerIndex_8812A(
 	if (power_idx > MAX_POWER_INDEX)
 		power_idx = MAX_POWER_INDEX;
 
-	if (power_idx % 2 == 1 && !IS_NORMAL_CHIP(pHalData->VersionID))
+	if (power_idx % 2 == 1 && !IS_NORMAL_CHIP(pHalData->version_id))
 		--power_idx;
 
 	return power_idx;
@@ -621,165 +621,165 @@ PHY_SetTxPowerIndex_8812A(
 	HAL_DATA_TYPE		*pHalData	= GET_HAL_DATA(Adapter);
 
 	/* <20120928, Kordan> A workaround in 8812A/8821A testchip, to fix the bug of odd Tx power indexes. */
-	if ((PowerIndex % 2 == 1) && IS_HARDWARE_TYPE_JAGUAR(Adapter) && IS_TEST_CHIP(pHalData->VersionID))
+	if ((PowerIndex % 2 == 1) && IS_HARDWARE_TYPE_JAGUAR(Adapter) && IS_TEST_CHIP(pHalData->version_id))
 		PowerIndex -= 1;
 
 	if (RFPath == RF_PATH_A) {
 		switch (Rate) {
 		case MGN_1M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_CCK11_CCK1_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_CCK11_CCK1_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_2M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_CCK11_CCK1_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_CCK11_CCK1_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_5_5M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_CCK11_CCK1_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_CCK11_CCK1_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_11M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_CCK11_CCK1_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_CCK11_CCK1_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_6M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Ofdm18_Ofdm6_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Ofdm18_Ofdm6_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_9M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Ofdm18_Ofdm6_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Ofdm18_Ofdm6_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_12M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Ofdm18_Ofdm6_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Ofdm18_Ofdm6_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_18M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Ofdm18_Ofdm6_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Ofdm18_Ofdm6_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_24M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Ofdm54_Ofdm24_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Ofdm54_Ofdm24_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_36M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Ofdm54_Ofdm24_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Ofdm54_Ofdm24_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_48M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Ofdm54_Ofdm24_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Ofdm54_Ofdm24_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_54M:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Ofdm54_Ofdm24_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Ofdm54_Ofdm24_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_MCS0:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS3_MCS0_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS3_MCS0_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_MCS1:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS3_MCS0_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS3_MCS0_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_MCS2:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS3_MCS0_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS3_MCS0_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_MCS3:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS3_MCS0_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS3_MCS0_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_MCS4:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS7_MCS4_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS7_MCS4_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_MCS5:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS7_MCS4_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS7_MCS4_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_MCS6:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS7_MCS4_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS7_MCS4_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_MCS7:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS7_MCS4_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS7_MCS4_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_MCS8:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS11_MCS8_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS11_MCS8_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_MCS9:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS11_MCS8_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS11_MCS8_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_MCS10:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS11_MCS8_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS11_MCS8_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_MCS11:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS11_MCS8_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS11_MCS8_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_MCS12:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS15_MCS12_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS15_MCS12_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_MCS13:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS15_MCS12_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS15_MCS12_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_MCS14:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS15_MCS12_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS15_MCS12_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_MCS15:
-			PHY_SetBBReg(Adapter, rTxAGC_A_MCS15_MCS12_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_MCS15_MCS12_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT1SS_MCS0:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss1Index3_Nss1Index0_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss1Index3_Nss1Index0_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS1:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss1Index3_Nss1Index0_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss1Index3_Nss1Index0_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS2:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss1Index3_Nss1Index0_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss1Index3_Nss1Index0_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS3:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss1Index3_Nss1Index0_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss1Index3_Nss1Index0_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT1SS_MCS4:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss1Index7_Nss1Index4_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss1Index7_Nss1Index4_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS5:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss1Index7_Nss1Index4_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss1Index7_Nss1Index4_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS6:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss1Index7_Nss1Index4_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss1Index7_Nss1Index4_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS7:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss1Index7_Nss1Index4_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss1Index7_Nss1Index4_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT1SS_MCS8:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index1_Nss1Index8_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index1_Nss1Index8_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS9:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index1_Nss1Index8_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index1_Nss1Index8_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS0:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index1_Nss1Index8_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index1_Nss1Index8_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS1:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index1_Nss1Index8_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index1_Nss1Index8_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT2SS_MCS2:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index5_Nss2Index2_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index5_Nss2Index2_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS3:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index5_Nss2Index2_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index5_Nss2Index2_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS4:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index5_Nss2Index2_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index5_Nss2Index2_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS5:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index5_Nss2Index2_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index5_Nss2Index2_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT2SS_MCS6:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index9_Nss2Index6_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index9_Nss2Index6_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS7:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index9_Nss2Index6_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index9_Nss2Index6_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS8:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index9_Nss2Index6_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index9_Nss2Index6_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS9:
-			PHY_SetBBReg(Adapter, rTxAGC_A_Nss2Index9_Nss2Index6_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_A_Nss2Index9_Nss2Index6_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		default:
@@ -789,159 +789,159 @@ PHY_SetTxPowerIndex_8812A(
 	} else if (RFPath == RF_PATH_B) {
 		switch (Rate) {
 		case MGN_1M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_CCK11_CCK1_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_CCK11_CCK1_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_2M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_CCK11_CCK1_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_CCK11_CCK1_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_5_5M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_CCK11_CCK1_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_CCK11_CCK1_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_11M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_CCK11_CCK1_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_CCK11_CCK1_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_6M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Ofdm18_Ofdm6_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Ofdm18_Ofdm6_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_9M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Ofdm18_Ofdm6_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Ofdm18_Ofdm6_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_12M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Ofdm18_Ofdm6_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Ofdm18_Ofdm6_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_18M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Ofdm18_Ofdm6_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Ofdm18_Ofdm6_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_24M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Ofdm54_Ofdm24_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Ofdm54_Ofdm24_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_36M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Ofdm54_Ofdm24_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Ofdm54_Ofdm24_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_48M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Ofdm54_Ofdm24_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Ofdm54_Ofdm24_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_54M:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Ofdm54_Ofdm24_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Ofdm54_Ofdm24_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_MCS0:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS3_MCS0_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS3_MCS0_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_MCS1:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS3_MCS0_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS3_MCS0_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_MCS2:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS3_MCS0_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS3_MCS0_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_MCS3:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS3_MCS0_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS3_MCS0_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_MCS4:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS7_MCS4_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS7_MCS4_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_MCS5:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS7_MCS4_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS7_MCS4_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_MCS6:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS7_MCS4_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS7_MCS4_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_MCS7:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS7_MCS4_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS7_MCS4_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_MCS8:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS11_MCS8_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS11_MCS8_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_MCS9:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS11_MCS8_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS11_MCS8_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_MCS10:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS11_MCS8_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS11_MCS8_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_MCS11:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS11_MCS8_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS11_MCS8_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_MCS12:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS15_MCS12_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS15_MCS12_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_MCS13:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS15_MCS12_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS15_MCS12_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_MCS14:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS15_MCS12_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS15_MCS12_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_MCS15:
-			PHY_SetBBReg(Adapter, rTxAGC_B_MCS15_MCS12_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_MCS15_MCS12_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT1SS_MCS0:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss1Index3_Nss1Index0_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss1Index3_Nss1Index0_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS1:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss1Index3_Nss1Index0_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss1Index3_Nss1Index0_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS2:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss1Index3_Nss1Index0_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss1Index3_Nss1Index0_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS3:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss1Index3_Nss1Index0_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss1Index3_Nss1Index0_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT1SS_MCS4:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss1Index7_Nss1Index4_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss1Index7_Nss1Index4_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS5:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss1Index7_Nss1Index4_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss1Index7_Nss1Index4_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS6:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss1Index7_Nss1Index4_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss1Index7_Nss1Index4_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS7:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss1Index7_Nss1Index4_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss1Index7_Nss1Index4_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT1SS_MCS8:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index1_Nss1Index8_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index1_Nss1Index8_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT1SS_MCS9:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index1_Nss1Index8_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index1_Nss1Index8_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS0:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index1_Nss1Index8_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index1_Nss1Index8_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS1:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index1_Nss1Index8_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index1_Nss1Index8_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT2SS_MCS2:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index5_Nss2Index2_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index5_Nss2Index2_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS3:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index5_Nss2Index2_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index5_Nss2Index2_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS4:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index5_Nss2Index2_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index5_Nss2Index2_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS5:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index5_Nss2Index2_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index5_Nss2Index2_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		case MGN_VHT2SS_MCS6:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index9_Nss2Index6_JAguar, bMaskByte0, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index9_Nss2Index6_JAguar, bMaskByte0, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS7:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index9_Nss2Index6_JAguar, bMaskByte1, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index9_Nss2Index6_JAguar, bMaskByte1, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS8:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index9_Nss2Index6_JAguar, bMaskByte2, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index9_Nss2Index6_JAguar, bMaskByte2, PowerIndex);
 			break;
 		case MGN_VHT2SS_MCS9:
-			PHY_SetBBReg(Adapter, rTxAGC_B_Nss2Index9_Nss2Index6_JAguar, bMaskByte3, PowerIndex);
+			phy_set_bb_reg(Adapter, rTxAGC_B_Nss2Index9_Nss2Index6_JAguar, bMaskByte3, PowerIndex);
 			break;
 
 		default:
@@ -962,15 +962,15 @@ PHY_UpdateTxPowerDbm8812(
 }
 
 
-u32 PHY_GetTxBBSwing_8812A(
+u32 phy_get_tx_bb_swing_8812a(
 	IN	PADAPTER	Adapter,
 	IN	BAND_TYPE	Band,
 	IN	u8			RFPath
 )
 {
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(GetDefaultAdapter(Adapter));
-	PDM_ODM_T		pDM_Odm = &pHalData->odmpriv;
-	PODM_RF_CAL_T	pRFCalibrateInfo = &(pDM_Odm->RFCalibrateInfo);
+	struct PHY_DM_STRUCT		*pDM_Odm = &pHalData->odmpriv;
+	struct odm_rf_calibration_structure	*pRFCalibrateInfo = &(pDM_Odm->rf_calibrate_info);
 
 	s8	bbSwing_2G = -1 * GetRegTxBBSwing_2G(Adapter);
 	s8	bbSwing_5G = -1 * GetRegTxBBSwing_5G(Adapter);
@@ -980,7 +980,7 @@ u32 PHY_GetTxBBSwing_8812A(
 
 	if (pHalData->bautoload_fail_flag) {
 		if (Band == BAND_ON_2_4G) {
-			pRFCalibrateInfo->BBSwingDiff2G = bbSwing_2G;
+			pRFCalibrateInfo->bb_swing_diff_2g = bbSwing_2G;
 			if (bbSwing_2G == 0)
 				out = 0x200; /* 0 dB */
 			else if (bbSwing_2G == -3)
@@ -991,15 +991,15 @@ u32 PHY_GetTxBBSwing_8812A(
 				out = 0x0B6; /* -9 dB */
 			else {
 				if (pHalData->ExternalPA_2G) {
-					pRFCalibrateInfo->BBSwingDiff2G = -3;
+					pRFCalibrateInfo->bb_swing_diff_2g = -3;
 					out = 0x16A;
 				} else  {
-					pRFCalibrateInfo->BBSwingDiff2G = 0;
+					pRFCalibrateInfo->bb_swing_diff_2g = 0;
 					out = 0x200;
 				}
 			}
 		} else if (Band == BAND_ON_5G) {
-			pRFCalibrateInfo->BBSwingDiff5G = bbSwing_5G;
+			pRFCalibrateInfo->bb_swing_diff_5g = bbSwing_5G;
 			if (bbSwing_5G == 0)
 				out = 0x200; /* 0 dB */
 			else if (bbSwing_5G == -3)
@@ -1009,17 +1009,17 @@ u32 PHY_GetTxBBSwing_8812A(
 			else if (bbSwing_5G == -9)
 				out = 0x0B6; /* -9 dB */
 			else {
-				if (pHalData->ExternalPA_5G || IS_HARDWARE_TYPE_8821(Adapter)) {
-					pRFCalibrateInfo->BBSwingDiff5G = -3;
+				if (pHalData->external_pa_5g || IS_HARDWARE_TYPE_8821(Adapter)) {
+					pRFCalibrateInfo->bb_swing_diff_5g = -3;
 					out = 0x16A;
 				} else {
-					pRFCalibrateInfo->BBSwingDiff5G = 0;
+					pRFCalibrateInfo->bb_swing_diff_5g = 0;
 					out = 0x200;
 				}
 			}
 		} else  {
-			pRFCalibrateInfo->BBSwingDiff2G = -3;
-			pRFCalibrateInfo->BBSwingDiff5G = -3;
+			pRFCalibrateInfo->bb_swing_diff_2g = -3;
+			pRFCalibrateInfo->bb_swing_diff_5g = -3;
 			out = 0x16A; /* -3 dB */
 		}
 	} else {
@@ -1062,32 +1062,32 @@ u32 PHY_GetTxBBSwing_8812A(
 
 		if (onePathSwing == 0x0) {
 			if (Band == BAND_ON_2_4G)
-				pRFCalibrateInfo->BBSwingDiff2G = 0;
+				pRFCalibrateInfo->bb_swing_diff_2g = 0;
 			else
-				pRFCalibrateInfo->BBSwingDiff5G = 0;
+				pRFCalibrateInfo->bb_swing_diff_5g = 0;
 			out = 0x200; /* 0 dB */
 		} else if (onePathSwing == 0x1) {
 			if (Band == BAND_ON_2_4G)
-				pRFCalibrateInfo->BBSwingDiff2G = -3;
+				pRFCalibrateInfo->bb_swing_diff_2g = -3;
 			else
-				pRFCalibrateInfo->BBSwingDiff5G = -3;
+				pRFCalibrateInfo->bb_swing_diff_5g = -3;
 			out = 0x16A; /* -3 dB */
 		} else if (onePathSwing == 0x2) {
 			if (Band == BAND_ON_2_4G)
-				pRFCalibrateInfo->BBSwingDiff2G = -6;
+				pRFCalibrateInfo->bb_swing_diff_2g = -6;
 			else
-				pRFCalibrateInfo->BBSwingDiff5G = -6;
+				pRFCalibrateInfo->bb_swing_diff_5g = -6;
 			out = 0x101; /* -6 dB */
 		} else if (onePathSwing == 0x3) {
 			if (Band == BAND_ON_2_4G)
-				pRFCalibrateInfo->BBSwingDiff2G = -9;
+				pRFCalibrateInfo->bb_swing_diff_2g = -9;
 			else
-				pRFCalibrateInfo->BBSwingDiff5G = -9;
+				pRFCalibrateInfo->bb_swing_diff_5g = -9;
 			out = 0x0B6; /* -9 dB */
 		}
 	}
 
-	/* RTW_INFO("<=== PHY_GetTxBBSwing_8812A, out = 0x%X\n", out); */
+	/* RTW_INFO("<=== phy_get_tx_bb_swing_8812a, out = 0x%X\n", out); */
 
 	return out;
 }
@@ -1102,98 +1102,98 @@ phy_SetRFEReg8812(
 	HAL_DATA_TYPE	*pHalData	= GET_HAL_DATA(Adapter);
 
 	if (Band == BAND_ON_2_4G) {
-		switch (pHalData->RFEType) {
+		switch (pHalData->rfe_type) {
 		case 0:
 		case 2:
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
-			PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
-			PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
 			break;
 		case 1:
 #ifdef CONFIG_BT_COEXIST
 			if (hal_btcoex_IsBtExist(Adapter) && (Adapter->registrypriv.mp_mode == 0)) {
-				PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, 0xffffff, 0x777777);
-				PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
-				PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, 0x33f00000, 0x000);
-				PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+				phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, 0xffffff, 0x777777);
+				phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
+				phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, 0x33f00000, 0x000);
+				phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
 			} else
 #endif
 			{
-				PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
-				PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
-				PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
-				PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+				phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
+				phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
+				phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+				phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
 			}
 			break;
 		case 3:
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x54337770);
-			PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x54337770);
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
-			PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
-			PHY_SetBBReg(Adapter, r_ANTSEL_SW_Jaguar, 0x00000303, 0x1);
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x54337770);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x54337770);
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, r_ANTSEL_SW_Jaguar, 0x00000303, 0x1);
 			break;
 		case 4:
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
-			PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x001);
-			PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x001);
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x001);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x001);
 			break;
 		case 5:
 			rtw_write8(Adapter, rA_RFE_Pinmux_Jaguar + 2, 0x77);
 
-			PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77777777);
 			u1tmp = rtw_read8(Adapter, rA_RFE_Inv_Jaguar + 3);
 			rtw_write8(Adapter, rA_RFE_Inv_Jaguar + 3, (u1tmp &= ~BIT0));
-			PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
 			break;
 		default:
 			break;
 		}
 	} else {
-		switch (pHalData->RFEType) {
+		switch (pHalData->rfe_type) {
 		case 0:
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
-			PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
-			PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
 			break;
 		case 1:
 #ifdef CONFIG_BT_COEXIST
 			if (hal_btcoex_IsBtExist(Adapter) && (Adapter->registrypriv.mp_mode == 0)) {
-				PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, 0xffffff, 0x337717);
-				PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
-				PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, 0x33f00000, 0x000);
-				PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+				phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, 0xffffff, 0x337717);
+				phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
+				phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, 0x33f00000, 0x000);
+				phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
 			} else
 #endif
 			{
-				PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
-				PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
-				PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
-				PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+				phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
+				phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337717);
+				phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
+				phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
 			}
 			break;
 		case 2:
 		case 4:
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337777);
-			PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337777);
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
-			PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337777);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337777);
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
 			break;
 		case 3:
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x54337717);
-			PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x54337717);
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
-			PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
-			PHY_SetBBReg(Adapter, r_ANTSEL_SW_Jaguar, 0x00000303, 0x1);
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x54337717);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x54337717);
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, r_ANTSEL_SW_Jaguar, 0x00000303, 0x1);
 			break;
 		case 5:
 			rtw_write8(Adapter, rA_RFE_Pinmux_Jaguar + 2, 0x33);
-			PHY_SetBBReg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337777);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x77337777);
 			u1tmp = rtw_read8(Adapter, rA_RFE_Inv_Jaguar + 3);
 			rtw_write8(Adapter, rA_RFE_Inv_Jaguar + 3, (u1tmp |= BIT0));
-			PHY_SetBBReg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
 			break;
 		default:
 			break;
@@ -1210,34 +1210,34 @@ void phy_SetBBSwingByBand_8812A(
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(GetDefaultAdapter(Adapter));
 
 	/* <20120903, Kordan> Tx BB swing setting for RL6286, asked by Ynlin. */
-	if (IS_NORMAL_CHIP(pHalData->VersionID) || IS_HARDWARE_TYPE_8821(Adapter)) {
+	if (IS_NORMAL_CHIP(pHalData->version_id) || IS_HARDWARE_TYPE_8821(Adapter)) {
 #if (MP_DRIVER == 1)
-		PMPT_CONTEXT	pMptCtx = &(Adapter->mppriv.MptCtx);
+		PMPT_CONTEXT	pMptCtx = &(Adapter->mppriv.mpt_ctx);
 #endif
 		s8	BBDiffBetweenBand = 0;
-		PDM_ODM_T		pDM_Odm = &pHalData->odmpriv;
-		PODM_RF_CAL_T	pRFCalibrateInfo = &(pDM_Odm->RFCalibrateInfo);
+		struct PHY_DM_STRUCT		*pDM_Odm = &pHalData->odmpriv;
+		struct odm_rf_calibration_structure	*pRFCalibrateInfo = &(pDM_Odm->rf_calibrate_info);
 		u8	path = ODM_RF_PATH_A;
 
-		PHY_SetBBReg(Adapter, rA_TxScale_Jaguar, 0xFFE00000,
-			PHY_GetTxBBSwing_8812A(Adapter, (BAND_TYPE)Band, ODM_RF_PATH_A)); /* 0xC1C[31:21] */
-		PHY_SetBBReg(Adapter, rB_TxScale_Jaguar, 0xFFE00000,
-			PHY_GetTxBBSwing_8812A(Adapter, (BAND_TYPE)Band, ODM_RF_PATH_B)); /* 0xE1C[31:21] */
+		phy_set_bb_reg(Adapter, rA_TxScale_Jaguar, 0xFFE00000,
+			phy_get_tx_bb_swing_8812a(Adapter, (BAND_TYPE)Band, ODM_RF_PATH_A)); /* 0xC1C[31:21] */
+		phy_set_bb_reg(Adapter, rB_TxScale_Jaguar, 0xFFE00000,
+			phy_get_tx_bb_swing_8812a(Adapter, (BAND_TYPE)Band, ODM_RF_PATH_B)); /* 0xE1C[31:21] */
 
 		/* <20121005, Kordan> When TxPowerTrack is ON, we should take care of the change of BB swing. */
 		/* That is, reset all info to trigger Tx power tracking. */
 		{
 #if (MP_DRIVER == 1)
-			path = pMptCtx->MptRfPath;
+			path = pMptCtx->mpt_rf_path;
 #endif
 
 			if (Band != PreviousBand) {
-				BBDiffBetweenBand = (pRFCalibrateInfo->BBSwingDiff2G - pRFCalibrateInfo->BBSwingDiff5G);
+				BBDiffBetweenBand = (pRFCalibrateInfo->bb_swing_diff_2g - pRFCalibrateInfo->bb_swing_diff_5g);
 				BBDiffBetweenBand = (Band == BAND_ON_2_4G) ? BBDiffBetweenBand : (-1 * BBDiffBetweenBand);
-				pRFCalibrateInfo->DefaultOfdmIndex += BBDiffBetweenBand * 2;
+				pRFCalibrateInfo->default_ofdm_index += BBDiffBetweenBand * 2;
 			}
 
-			ODM_ClearTxPowerTrackingState(pDM_Odm);
+			odm_clear_txpowertracking_state(pDM_Odm);
 		}
 	}
 }
@@ -1253,33 +1253,33 @@ phy_SetRFEReg8821(
 
 	if (Band == BAND_ON_2_4G) {
 		/* Turn off RF PA and LNA */
-		PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, 0xF000, 0x7);	/* 0xCB0[15:12] = 0x7 (LNA_On) */
-		PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, 0xF0, 0x7);	/* 0xCB0[7:4] = 0x7 (PAPE_A)			 */
+		phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, 0xF000, 0x7);	/* 0xCB0[15:12] = 0x7 (LNA_On) */
+		phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, 0xF0, 0x7);	/* 0xCB0[7:4] = 0x7 (PAPE_A)			 */
 
 		if (pHalData->ExternalLNA_2G) {
 			/* <20131223, VincentL> Turn on 2.4G External LNA (Asked by Luke Lee & Alex Wang) */
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, BIT20, 1); 			/* 0xCB4 = 0x10100077; */
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, BIT22, 0); 			/* 0xCB4 = 0x10100077; */
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, BIT2 | BIT1 | BIT0, 0x2);	/* 0xCB0[2:0] = b'010 */
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, BIT10 | BIT9 | BIT8, 0x2);	/* 0xCB0[10:8] = b'010 */
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, BIT20, 1);			/* 0xCB4 = 0x10100077; */
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, BIT22, 0);			/* 0xCB4 = 0x10100077; */
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, BIT2 | BIT1 | BIT0, 0x2);	/* 0xCB0[2:0] = b'010 */
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, BIT10 | BIT9 | BIT8, 0x2);	/* 0xCB0[10:8] = b'010 */
 
 		} else {
 			/* <20131223, VincentL> Bypass 2.4G External LNA (Asked by Luke Lee & Alex Wang) */
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, BIT20, 0); 			/* 0xCB4 = 0x10000077; */
-			PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, BIT22, 0); 			/* 0xCB4 = 0x10000077; */
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, BIT2 | BIT1 | BIT0, 0x7);	/* 0xCB0[2:0] = b'111 */
-			PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, BIT10 | BIT9 | BIT8, 0x7);	/* 0xCB0[10:8] = b'111 */
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, BIT20, 0);			/* 0xCB4 = 0x10000077; */
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, BIT22, 0);			/* 0xCB4 = 0x10000077; */
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, BIT2 | BIT1 | BIT0, 0x7);	/* 0xCB0[2:0] = b'111 */
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, BIT10 | BIT9 | BIT8, 0x7);	/* 0xCB0[10:8] = b'111 */
 		}
 	} else {
 		/* Turn ON RF PA and LNA */
-		PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, 0xF000, 0x5);	/* 0xCB0[15:12] = 0x5 (LNA_On) */
-		PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, 0xF0, 0x4);	/* 0xCB0[7:4] = 0x4 (PAPE_A)			 */
+		phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, 0xF000, 0x5);	/* 0xCB0[15:12] = 0x5 (LNA_On) */
+		phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, 0xF0, 0x4);	/* 0xCB0[7:4] = 0x4 (PAPE_A)			 */
 
 		/* <20131223, VincentL> Bypass 2.4G External LNA (Asked by Luke Lee & Alex Wang) */
-		PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, BIT20, 0); 			/* 0xCB4 = 0x10000077; */
-		PHY_SetBBReg(Adapter, rA_RFE_Inv_Jaguar, BIT22, 0); 			/* 0xCB4 = 0x10000077; */
-		PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, BIT2 | BIT1 | BIT0, 0x7);	/* 0xCB0[2:0] = b'111 */
-		PHY_SetBBReg(Adapter, rA_RFE_Pinmux_Jaguar, BIT10 | BIT9 | BIT8, 0x7);	/* 0xCB0[10:8] = b'111 */
+		phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, BIT20, 0);			/* 0xCB4 = 0x10000077; */
+		phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, BIT22, 0);			/* 0xCB4 = 0x10000077; */
+		phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, BIT2 | BIT1 | BIT0, 0x7);	/* 0xCB0[2:0] = b'111 */
+		phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, BIT10 | BIT9 | BIT8, 0x7);	/* 0xCB0[10:8] = b'111 */
 
 	}
 }
@@ -1293,14 +1293,14 @@ PHY_SwitchWirelessBand8812(
 )
 {
 	HAL_DATA_TYPE	*pHalData	= GET_HAL_DATA(Adapter);
-	u8				currentBand = pHalData->CurrentBandType;
-	u8 current_bw = pHalData->CurrentChannelBW;
+	u8				currentBand = pHalData->current_band_type;
+	u8 current_bw = pHalData->current_channel_bw;
 	u8 rf_type = pHalData->rf_type;
 	u8 eLNA_2g = pHalData->ExternalLNA_2G;
 
 	/* RTW_INFO("==>PHY_SwitchWirelessBand8812() %s\n", ((Band==0)?"2.4G":"5G")); */
 
-	pHalData->CurrentBandType = (BAND_TYPE)Band;
+	pHalData->current_band_type = (BAND_TYPE)Band;
 
 	if (Band == BAND_ON_2_4G) {
 		/* 2.4G band */
@@ -1315,16 +1315,16 @@ PHY_SwitchWirelessBand8812(
 		}
 #endif /*#ifdef CONFIG_RTL8821A*/
 
-		PHY_SetBBReg(Adapter, rOFDMCCKEN_Jaguar, bOFDMEN_Jaguar | bCCKEN_Jaguar, 0x03);
+		phy_set_bb_reg(Adapter, rOFDMCCKEN_Jaguar, bOFDMEN_Jaguar | bCCKEN_Jaguar, 0x03);
 
 		if (IS_HARDWARE_TYPE_8821(Adapter))
 			phy_SetRFEReg8821(Adapter, Band);
 
 		if (IS_HARDWARE_TYPE_8812(Adapter)) {
 			/* <20131128, VincentL> Remove 0x830[3:1] setting when switching 2G/5G, requested by Yn. */
-			PHY_SetBBReg(Adapter, rBWIndication_Jaguar, 0x3, 0x1); 		/* 0x834[1:0] = 0x1 */
+			phy_set_bb_reg(Adapter, rBWIndication_Jaguar, 0x3, 0x1);		/* 0x834[1:0] = 0x1 */
 			/* set PD_TH_20M for BB Yn user guide R27 */
-			PHY_SetBBReg(Adapter, rPwed_TH_Jaguar, BIT13 | BIT14 | BIT15 | BIT16 | BIT17, 0x17);		/* 0x830[17:13]=5'b10111 */
+			phy_set_bb_reg(Adapter, rPwed_TH_Jaguar, BIT13 | BIT14 | BIT15 | BIT16 | BIT17, 0x17);		/* 0x830[17:13]=5'b10111 */
 		}
 
 		/* set PWED_TH for BB Yn user guide R29 */
@@ -1333,17 +1333,17 @@ PHY_SwitchWirelessBand8812(
 			    && pHalData->rf_type == RF_1T1R
 			    && eLNA_2g == 0) {
 				/* 0x830[3:1]=3'b010 */
-				PHY_SetBBReg(Adapter, rPwed_TH_Jaguar, BIT1 | BIT2 | BIT3, 0x02);
+				phy_set_bb_reg(Adapter, rPwed_TH_Jaguar, BIT1 | BIT2 | BIT3, 0x02);
 			} else
 				/* 0x830[3:1]=3'b100 */
-				PHY_SetBBReg(Adapter, rPwed_TH_Jaguar, BIT1 | BIT2 | BIT3, 0x04);
+				phy_set_bb_reg(Adapter, rPwed_TH_Jaguar, BIT1 | BIT2 | BIT3, 0x04);
 		}
 
 		/* AGC table select */
 		if (IS_VENDOR_8821A_MP_CHIP(Adapter))
-			PHY_SetBBReg(Adapter, rA_TxScale_Jaguar, 0xF00, 0); 		/* 0xC1C[11:8] = 0 */
+			phy_set_bb_reg(Adapter, rA_TxScale_Jaguar, 0xF00, 0);		/* 0xC1C[11:8] = 0 */
 		else
-			PHY_SetBBReg(Adapter, rAGC_table_Jaguar, 0x3, 0);			/* 0x82C[1:0] = 2b'00 */
+			phy_set_bb_reg(Adapter, rAGC_table_Jaguar, 0x3, 0);			/* 0x82C[1:0] = 2b'00 */
 
 		if (IS_HARDWARE_TYPE_8812(Adapter))
 			phy_SetRFEReg8812(Adapter, Band);
@@ -1351,8 +1351,8 @@ PHY_SwitchWirelessBand8812(
 		/* <20131106, Kordan> Workaround to fix CCK FA for scan issue. */
 		/* if( pHalData->bMPMode == FALSE) */
 		if (Adapter->registrypriv.mp_mode == 0) {
-			PHY_SetBBReg(Adapter, rTxPath_Jaguar, 0xf0, 0x1);
-			PHY_SetBBReg(Adapter, rCCK_RX_Jaguar, 0x0f000000, 0x1);
+			phy_set_bb_reg(Adapter, rTxPath_Jaguar, 0xf0, 0x1);
+			phy_set_bb_reg(Adapter, rCCK_RX_Jaguar, 0x0f000000, 0x1);
 		}
 
 		update_tx_basic_rate(Adapter, WIRELESS_11BG);
@@ -1396,25 +1396,25 @@ PHY_SwitchWirelessBand8812(
 
 		/* 2012/02/01, Sinda add registry to switch workaround without long-run verification for scan issue. */
 		if (Adapter->registrypriv.mp_mode == 0)
-			PHY_SetBBReg(Adapter, rOFDMCCKEN_Jaguar, bOFDMEN_Jaguar | bCCKEN_Jaguar, 0x03);
+			phy_set_bb_reg(Adapter, rOFDMCCKEN_Jaguar, bOFDMEN_Jaguar | bCCKEN_Jaguar, 0x03);
 
 		if (IS_HARDWARE_TYPE_8812(Adapter)) {
 			/* <20131128, VincentL> Remove 0x830[3:1] setting when switching 2G/5G, requested by Yn. */
-			PHY_SetBBReg(Adapter, rBWIndication_Jaguar, 0x3, 0x2); /* 0x834[1:0] = 0x2 */
+			phy_set_bb_reg(Adapter, rBWIndication_Jaguar, 0x3, 0x2); /* 0x834[1:0] = 0x2 */
 			/* set PD_TH_20M for BB Yn user guide R27 */
-			PHY_SetBBReg(Adapter, rPwed_TH_Jaguar, BIT13 | BIT14 | BIT15 | BIT16 | BIT17, 0x15);		/* 0x830[17:13]=5'b10101 */
+			phy_set_bb_reg(Adapter, rPwed_TH_Jaguar, BIT13 | BIT14 | BIT15 | BIT16 | BIT17, 0x15);		/* 0x830[17:13]=5'b10101 */
 		}
 
 		/* set PWED_TH for BB Yn user guide R29 */
 		if (IS_HARDWARE_TYPE_8812(Adapter))
 			/* 0x830[3:1]=3'b100 */
-			PHY_SetBBReg(Adapter, rPwed_TH_Jaguar, BIT1 | BIT2 | BIT3, 0x04);
+			phy_set_bb_reg(Adapter, rPwed_TH_Jaguar, BIT1 | BIT2 | BIT3, 0x04);
 
 		/* AGC table select */
 		if (IS_VENDOR_8821A_MP_CHIP(Adapter))
-			PHY_SetBBReg(Adapter, rA_TxScale_Jaguar, 0xF00, 1);	/* 0xC1C[11:8] = 1 */
+			phy_set_bb_reg(Adapter, rA_TxScale_Jaguar, 0xF00, 1);	/* 0xC1C[11:8] = 1 */
 		else
-			PHY_SetBBReg(Adapter, rAGC_table_Jaguar, 0x3, 1);		/* 0x82C[1:0] = 2'b00 */
+			phy_set_bb_reg(Adapter, rAGC_table_Jaguar, 0x3, 1);		/* 0x82C[1:0] = 2'b00 */
 
 		if (IS_HARDWARE_TYPE_8812(Adapter))
 			phy_SetRFEReg8812(Adapter, Band);
@@ -1422,11 +1422,11 @@ PHY_SwitchWirelessBand8812(
 		/* <20131106, Kordan> Workaround to fix CCK FA for scan issue. */
 		/* if( pHalData->bMPMode == FALSE) */
 		if (Adapter->registrypriv.mp_mode == 0) {
-			PHY_SetBBReg(Adapter, rTxPath_Jaguar, 0xf0, 0x0);
-			PHY_SetBBReg(Adapter, rCCK_RX_Jaguar, 0x0f000000, 0xF);
+			phy_set_bb_reg(Adapter, rTxPath_Jaguar, 0xf0, 0x0);
+			phy_set_bb_reg(Adapter, rCCK_RX_Jaguar, 0x0f000000, 0xF);
 		} else {
 			/* cck_enable */
-			PHY_SetBBReg(Adapter, rOFDMCCKEN_Jaguar, bOFDMEN_Jaguar | bCCKEN_Jaguar, 0x02);
+			phy_set_bb_reg(Adapter, rOFDMCCKEN_Jaguar, bOFDMEN_Jaguar | bCCKEN_Jaguar, 0x02);
 		}
 
 		/* avoid using cck rate in 5G band */
@@ -1478,8 +1478,8 @@ phy_GetSecondaryChnl_8812(
 	u8					SCSettingOf40 = 0, SCSettingOf20 = 0;
 	PHAL_DATA_TYPE		pHalData = GET_HAL_DATA(Adapter);
 
-	/* RTW_INFO("SCMapping: Case: pHalData->CurrentChannelBW %d, pHalData->nCur80MhzPrimeSC %d, pHalData->nCur40MhzPrimeSC %d\n",pHalData->CurrentChannelBW,pHalData->nCur80MhzPrimeSC,pHalData->nCur40MhzPrimeSC); */
-	if (pHalData->CurrentChannelBW == CHANNEL_WIDTH_80) {
+	/* RTW_INFO("SCMapping: Case: pHalData->current_channel_bw %d, pHalData->nCur80MhzPrimeSC %d, pHalData->nCur40MhzPrimeSC %d\n",pHalData->current_channel_bw,pHalData->nCur80MhzPrimeSC,pHalData->nCur40MhzPrimeSC); */
+	if (pHalData->current_channel_bw == CHANNEL_WIDTH_80) {
 		if (pHalData->nCur80MhzPrimeSC == HAL_PRIME_CHNL_OFFSET_LOWER)
 			SCSettingOf40 = VHT_DATA_SC_40_LOWER_OF_80MHZ;
 		else if (pHalData->nCur80MhzPrimeSC == HAL_PRIME_CHNL_OFFSET_UPPER)
@@ -1497,8 +1497,8 @@ phy_GetSecondaryChnl_8812(
 			SCSettingOf20 = VHT_DATA_SC_20_UPPERST_OF_80MHZ;
 		else
 			RTW_INFO("SCMapping: DONOT CARE Mode Setting\n");
-	} else if (pHalData->CurrentChannelBW == CHANNEL_WIDTH_40) {
-		/* RTW_INFO("SCMapping: Case: pHalData->CurrentChannelBW %d, pHalData->nCur40MhzPrimeSC %d\n",pHalData->CurrentChannelBW,pHalData->nCur40MhzPrimeSC); */
+	} else if (pHalData->current_channel_bw == CHANNEL_WIDTH_40) {
+		/* RTW_INFO("SCMapping: Case: pHalData->current_channel_bw %d, pHalData->nCur40MhzPrimeSC %d\n",pHalData->current_channel_bw,pHalData->nCur40MhzPrimeSC); */
 
 		if (pHalData->nCur40MhzPrimeSC == HAL_PRIME_CHNL_OFFSET_UPPER)
 			SCSettingOf20 = VHT_DATA_SC_20_UPPER_OF_80MHZ;
@@ -1553,35 +1553,35 @@ phy_FixSpur_8812A(
 	/* C cut Item12 ADC FIFO CLOCK */
 	if (IS_VENDOR_8812A_C_CUT(pAdapter)) {
 		if (Bandwidth == CHANNEL_WIDTH_40 && Channel == 11)
-			PHY_SetBBReg(pAdapter, rRFMOD_Jaguar, 0xC00, 0x3)	;		/* 0x8AC[11:10] = 2'b11 */
+			phy_set_bb_reg(pAdapter, rRFMOD_Jaguar, 0xC00, 0x3)	;		/* 0x8AC[11:10] = 2'b11 */
 		else
-			PHY_SetBBReg(pAdapter, rRFMOD_Jaguar, 0xC00, 0x2);		/* 0x8AC[11:10] = 2'b10 */
+			phy_set_bb_reg(pAdapter, rRFMOD_Jaguar, 0xC00, 0x2);		/* 0x8AC[11:10] = 2'b10 */
 
 		/* <20120914, Kordan> A workarould to resolve 2480Mhz spur by setting ADC clock as 160M. (Asked by Binson) */
 		if (Bandwidth == CHANNEL_WIDTH_20 &&
 		    (Channel == 13 || Channel == 14)) {
 
-			PHY_SetBBReg(pAdapter, rRFMOD_Jaguar, 0x300, 0x3);  		/* 0x8AC[9:8] = 2'b11 */
-			PHY_SetBBReg(pAdapter, rADC_Buf_Clk_Jaguar, BIT30, 1); 	/* 0x8C4[30] = 1 */
+			phy_set_bb_reg(pAdapter, rRFMOD_Jaguar, 0x300, 0x3);		/* 0x8AC[9:8] = 2'b11 */
+			phy_set_bb_reg(pAdapter, rADC_Buf_Clk_Jaguar, BIT30, 1);	/* 0x8C4[30] = 1 */
 
 		} else if (Bandwidth == CHANNEL_WIDTH_40 &&
 			   Channel == 11) {
 
-			PHY_SetBBReg(pAdapter, rADC_Buf_Clk_Jaguar, BIT30, 1); 	/* 0x8C4[30] = 1 */
+			phy_set_bb_reg(pAdapter, rADC_Buf_Clk_Jaguar, BIT30, 1);	/* 0x8C4[30] = 1 */
 
 		} else if (Bandwidth != CHANNEL_WIDTH_80) {
 
-			PHY_SetBBReg(pAdapter, rRFMOD_Jaguar, 0x300, 0x2);  		/* 0x8AC[9:8] = 2'b10	 */
-			PHY_SetBBReg(pAdapter, rADC_Buf_Clk_Jaguar, BIT30, 0); 	/* 0x8C4[30] = 0 */
+			phy_set_bb_reg(pAdapter, rRFMOD_Jaguar, 0x300, 0x2);		/* 0x8AC[9:8] = 2'b10	 */
+			phy_set_bb_reg(pAdapter, rADC_Buf_Clk_Jaguar, BIT30, 0);	/* 0x8C4[30] = 0 */
 
 		}
 	} else if (IS_HARDWARE_TYPE_8812(pAdapter)) {
 		/* <20120914, Kordan> A workarould to resolve 2480Mhz spur by setting ADC clock as 160M. (Asked by Binson) */
 		if (Bandwidth == CHANNEL_WIDTH_20 &&
 		    (Channel == 13 || Channel == 14))
-			PHY_SetBBReg(pAdapter, rRFMOD_Jaguar, 0x300, 0x3);  /* 0x8AC[9:8] = 11 */
+			phy_set_bb_reg(pAdapter, rRFMOD_Jaguar, 0x300, 0x3);  /* 0x8AC[9:8] = 11 */
 		else if (Channel <= 14) /* 2.4G only */
-			PHY_SetBBReg(pAdapter, rRFMOD_Jaguar, 0x300, 0x2);  /* 0x8AC[9:8] = 10 */
+			phy_set_bb_reg(pAdapter, rRFMOD_Jaguar, 0x300, 0x2);  /* 0x8AC[9:8] = 10 */
 	}
 
 }
@@ -1597,7 +1597,7 @@ phy_PostSetBwMode8812(
 
 
 	/* 3 Set Reg668 BW */
-	phy_SetRegBW_8812(Adapter, pHalData->CurrentChannelBW);
+	phy_SetRegBW_8812(Adapter, pHalData->current_channel_bw);
 
 	/* 3 Set Reg483 */
 	SubChnlNum = phy_GetSecondaryChnl_8812(Adapter);
@@ -1609,23 +1609,23 @@ phy_PostSetBwMode8812(
 	}
 
 	/* 3 Set Reg848 Reg864 Reg8AC Reg8C4 RegA00 */
-	switch (pHalData->CurrentChannelBW) {
+	switch (pHalData->current_channel_bw) {
 	case CHANNEL_WIDTH_20:
-		PHY_SetBBReg(Adapter, rRFMOD_Jaguar, 0x003003C3, 0x00300200); /* 0x8ac[21,20,9:6,1,0]=8'b11100000 */
-		PHY_SetBBReg(Adapter, rADC_Buf_Clk_Jaguar, BIT30, 0);			/* 0x8c4[30] = 1'b0 */
+		phy_set_bb_reg(Adapter, rRFMOD_Jaguar, 0x003003C3, 0x00300200); /* 0x8ac[21,20,9:6,1,0]=8'b11100000 */
+		phy_set_bb_reg(Adapter, rADC_Buf_Clk_Jaguar, BIT30, 0);			/* 0x8c4[30] = 1'b0 */
 
 		if (pHalData->rf_type == RF_2T2R)
-			PHY_SetBBReg(Adapter, rL1PeakTH_Jaguar, 0x03C00000, 7);	/* 2R 0x848[25:22] = 0x7 */
+			phy_set_bb_reg(Adapter, rL1PeakTH_Jaguar, 0x03C00000, 7);	/* 2R 0x848[25:22] = 0x7 */
 		else
-			PHY_SetBBReg(Adapter, rL1PeakTH_Jaguar, 0x03C00000, 8);	/* 1R 0x848[25:22] = 0x8 */
+			phy_set_bb_reg(Adapter, rL1PeakTH_Jaguar, 0x03C00000, 8);	/* 1R 0x848[25:22] = 0x8 */
 
 		break;
 
 	case CHANNEL_WIDTH_40:
-		PHY_SetBBReg(Adapter, rRFMOD_Jaguar, 0x003003C3, 0x00300201); /* 0x8ac[21,20,9:6,1,0]=8'b11100000		 */
-		PHY_SetBBReg(Adapter, rADC_Buf_Clk_Jaguar, BIT30, 0);			/* 0x8c4[30] = 1'b0 */
-		PHY_SetBBReg(Adapter, rRFMOD_Jaguar, 0x3C, SubChnlNum);
-		PHY_SetBBReg(Adapter, rCCAonSec_Jaguar, 0xf0000000, SubChnlNum);
+		phy_set_bb_reg(Adapter, rRFMOD_Jaguar, 0x003003C3, 0x00300201); /* 0x8ac[21,20,9:6,1,0]=8'b11100000		 */
+		phy_set_bb_reg(Adapter, rADC_Buf_Clk_Jaguar, BIT30, 0);			/* 0x8c4[30] = 1'b0 */
+		phy_set_bb_reg(Adapter, rRFMOD_Jaguar, 0x3C, SubChnlNum);
+		phy_set_bb_reg(Adapter, rCCAonSec_Jaguar, 0xf0000000, SubChnlNum);
 
 		if (pHalData->Reg837 & BIT2)
 			L1pkVal = 6;
@@ -1636,19 +1636,19 @@ phy_PostSetBwMode8812(
 				L1pkVal = 8;
 		}
 
-		PHY_SetBBReg(Adapter, rL1PeakTH_Jaguar, 0x03C00000, L1pkVal);	/* 0x848[25:22] = 0x6 */
+		phy_set_bb_reg(Adapter, rL1PeakTH_Jaguar, 0x03C00000, L1pkVal);	/* 0x848[25:22] = 0x6 */
 
 		if (SubChnlNum == VHT_DATA_SC_20_UPPER_OF_80MHZ)
-			PHY_SetBBReg(Adapter, rCCK_System_Jaguar, bCCK_System_Jaguar, 1);
+			phy_set_bb_reg(Adapter, rCCK_System_Jaguar, bCCK_System_Jaguar, 1);
 		else
-			PHY_SetBBReg(Adapter, rCCK_System_Jaguar, bCCK_System_Jaguar, 0);
+			phy_set_bb_reg(Adapter, rCCK_System_Jaguar, bCCK_System_Jaguar, 0);
 		break;
 
 	case CHANNEL_WIDTH_80:
-		PHY_SetBBReg(Adapter, rRFMOD_Jaguar, 0x003003C3, 0x00300202); /* 0x8ac[21,20,9:6,1,0]=8'b11100010 */
-		PHY_SetBBReg(Adapter, rADC_Buf_Clk_Jaguar, BIT30, 1);			/* 0x8c4[30] = 1 */
-		PHY_SetBBReg(Adapter, rRFMOD_Jaguar, 0x3C, SubChnlNum);
-		PHY_SetBBReg(Adapter, rCCAonSec_Jaguar, 0xf0000000, SubChnlNum);
+		phy_set_bb_reg(Adapter, rRFMOD_Jaguar, 0x003003C3, 0x00300202); /* 0x8ac[21,20,9:6,1,0]=8'b11100010 */
+		phy_set_bb_reg(Adapter, rADC_Buf_Clk_Jaguar, BIT30, 1);			/* 0x8c4[30] = 1 */
+		phy_set_bb_reg(Adapter, rRFMOD_Jaguar, 0x3C, SubChnlNum);
+		phy_set_bb_reg(Adapter, rCCAonSec_Jaguar, 0xf0000000, SubChnlNum);
 
 		if (pHalData->Reg837 & BIT2)
 			L1pkVal = 5;
@@ -1658,24 +1658,24 @@ phy_PostSetBwMode8812(
 			else
 				L1pkVal = 7;
 		}
-		PHY_SetBBReg(Adapter, rL1PeakTH_Jaguar, 0x03C00000, L1pkVal);	/* 0x848[25:22] = 0x5 */
+		phy_set_bb_reg(Adapter, rL1PeakTH_Jaguar, 0x03C00000, L1pkVal);	/* 0x848[25:22] = 0x5 */
 
 		break;
 
 	default:
-		RTW_INFO("phy_PostSetBWMode8812():	unknown Bandwidth: %#X\n", pHalData->CurrentChannelBW);
+		RTW_INFO("phy_PostSetBWMode8812():	unknown Bandwidth: %#X\n", pHalData->current_channel_bw);
 		break;
 	}
 
 	/* <20121109, Kordan> A workaround for 8812A only. */
-	phy_FixSpur_8812A(Adapter, pHalData->CurrentChannelBW, pHalData->CurrentChannel);
+	phy_FixSpur_8812A(Adapter, pHalData->current_channel_bw, pHalData->current_channel);
 
 	/* RTW_INFO("phy_PostSetBwMode8812(): Reg483: %x\n", rtw_read8(Adapter, 0x483)); */
 	/* RTW_INFO("phy_PostSetBwMode8812(): Reg668: %x\n", rtw_read32(Adapter, 0x668)); */
-	/* RTW_INFO("phy_PostSetBwMode8812(): Reg8AC: %x\n", PHY_QueryBBReg(Adapter, rRFMOD_Jaguar, 0xffffffff)); */
+	/* RTW_INFO("phy_PostSetBwMode8812(): Reg8AC: %x\n", phy_query_bb_reg(Adapter, rRFMOD_Jaguar, 0xffffffff)); */
 
 	/* 3 Set RF related register */
-	PHY_RF6052SetBandwidth8812(Adapter, pHalData->CurrentChannelBW);
+	PHY_RF6052SetBandwidth8812(Adapter, pHalData->current_channel_bw);
 }
 
 /* <20130207, Kordan> The variales initialized here are used in odm_LNAPowerControl(). */
@@ -1684,10 +1684,10 @@ VOID phy_InitRssiTRSW(
 )
 {
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
-	PDM_ODM_T		pDM_Odm = &pHalData->odmpriv;
-	u8			channel = pHalData->CurrentChannel;
+	struct PHY_DM_STRUCT		*pDM_Odm = &pHalData->odmpriv;
+	u8			channel = pHalData->current_channel;
 
-	if (pHalData->RFEType == 3) {
+	if (pHalData->rfe_type == 3) {
 
 		if (channel <= 14) {
 			pDM_Odm->RSSI_TRSW_H    = 70; /* Unit: percentage(%) */
@@ -1711,15 +1711,15 @@ phy_SpurCalibration_8812A(
 {
 
 	/* 2 1. Reset */
-	PHY_SetBBReg(pAdapter, 0x874, BIT0, 0);
-	PHY_SetBBReg(pAdapter, 0x874, BIT21 , 0);
-	PHY_SetBBReg(pAdapter, 0x878, BIT8 | BIT7 | BIT6, 0);
-	PHY_SetBBReg(pAdapter, 0x878, BIT0, 0);
-	PHY_SetBBReg(pAdapter, 0x87C, BIT13, 0);
-	PHY_SetBBReg(pAdapter, 0x880, bMaskDWord, 0);
-	PHY_SetBBReg(pAdapter, 0x884, bMaskDWord, 0);
-	PHY_SetBBReg(pAdapter, 0x898, bMaskDWord, 0);
-	PHY_SetBBReg(pAdapter, 0x89C, bMaskDWord, 0);
+	phy_set_bb_reg(pAdapter, 0x874, BIT0, 0);
+	phy_set_bb_reg(pAdapter, 0x874, BIT21 , 0);
+	phy_set_bb_reg(pAdapter, 0x878, BIT8 | BIT7 | BIT6, 0);
+	phy_set_bb_reg(pAdapter, 0x878, BIT0, 0);
+	phy_set_bb_reg(pAdapter, 0x87C, BIT13, 0);
+	phy_set_bb_reg(pAdapter, 0x880, bMaskDWord, 0);
+	phy_set_bb_reg(pAdapter, 0x884, bMaskDWord, 0);
+	phy_set_bb_reg(pAdapter, 0x898, bMaskDWord, 0);
+	phy_set_bb_reg(pAdapter, 0x89C, bMaskDWord, 0);
 
 
 	/* 2 2. Register Setting 1 (False Alarm) */
@@ -1727,25 +1727,25 @@ phy_SpurCalibration_8812A(
 	    (Channel == 151 && Bandwidth == CHANNEL_WIDTH_40) ||
 	    (Channel == 155 && Bandwidth == CHANNEL_WIDTH_80)) {
 
-		PHY_SetBBReg(pAdapter, 0x878, BIT6, 0);
-		PHY_SetBBReg(pAdapter, 0x878, BIT7, 0);
-		PHY_SetBBReg(pAdapter, 0x878, BIT8, 1);
-		PHY_SetBBReg(pAdapter, 0x878, BIT0, 1);
-		PHY_SetBBReg(pAdapter, 0x87C, BIT13, 1);
+		phy_set_bb_reg(pAdapter, 0x878, BIT6, 0);
+		phy_set_bb_reg(pAdapter, 0x878, BIT7, 0);
+		phy_set_bb_reg(pAdapter, 0x878, BIT8, 1);
+		phy_set_bb_reg(pAdapter, 0x878, BIT0, 1);
+		phy_set_bb_reg(pAdapter, 0x87C, BIT13, 1);
 	}
 
 	/* 2 3. Register Setting 2 (SINR) */
-	PHY_SetBBReg(pAdapter, 0x874, BIT21, 1);
-	PHY_SetBBReg(pAdapter, 0x874, BIT0 , 1);
+	phy_set_bb_reg(pAdapter, 0x874, BIT21, 1);
+	phy_set_bb_reg(pAdapter, 0x874, BIT0 , 1);
 
 	if (Channel == 149 && Bandwidth == CHANNEL_WIDTH_20)
-		PHY_SetBBReg(pAdapter, 0x884, bMaskDWord, 0x00010000);
+		phy_set_bb_reg(pAdapter, 0x884, bMaskDWord, 0x00010000);
 	else if (Channel == 153 && Bandwidth == CHANNEL_WIDTH_20)
-		PHY_SetBBReg(pAdapter, 0x89C, bMaskDWord, 0x00010000);
+		phy_set_bb_reg(pAdapter, 0x89C, bMaskDWord, 0x00010000);
 	else if (Channel == 151 && Bandwidth == CHANNEL_WIDTH_40)
-		PHY_SetBBReg(pAdapter, 0x880, bMaskDWord, 0x00010000);
+		phy_set_bb_reg(pAdapter, 0x880, bMaskDWord, 0x00010000);
 	else if (Channel == 155 && Bandwidth == CHANNEL_WIDTH_80)
-		PHY_SetBBReg(pAdapter, 0x898, bMaskDWord, 0x00010000);
+		phy_set_bb_reg(pAdapter, 0x898, bMaskDWord, 0x00010000);
 
 }
 
@@ -1756,8 +1756,8 @@ phy_SwChnl8812(
 {
 	u8	eRFPath = 0;
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
-	u8	channelToSW = pHalData->CurrentChannel;
-	u8	bandwidthToSw = pHalData->CurrentChannelBW;
+	u8	channelToSW = pHalData->current_channel;
+	u8	bandwidthToSw = pHalData->current_channel_bw;
 
 	if (phy_SwBand8812(pAdapter, channelToSW) == _FALSE)
 		RTW_INFO("error Chnl %d !\n", channelToSW);
@@ -1765,7 +1765,7 @@ phy_SwChnl8812(
 	/* <20130313, Kordan> Sample code to demonstrate how to configure AGC_TAB_DIFF.(Disabled by now) */
 #if  (MP_DRIVER == 1)
 	if (pAdapter->registrypriv.mp_mode == 1)
-		ODM_ConfigBBWithHeaderFile(&pHalData->odmpriv, CONFIG_BB_AGC_TAB_DIFF);
+		odm_config_bb_with_header_file(&pHalData->odmpriv, CONFIG_BB_AGC_TAB_DIFF);
 #endif
 
 	if (pHalData->rf_chip == RF_PSEUDO_11N) {
@@ -1777,57 +1777,57 @@ phy_SwChnl8812(
 
 	/* fc_area		 */
 	if (36 <= channelToSW && channelToSW <= 48)
-		PHY_SetBBReg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x494);
+		phy_set_bb_reg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x494);
 	else if (50 <= channelToSW && channelToSW <= 64)
-		PHY_SetBBReg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x453);
+		phy_set_bb_reg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x453);
 	else if (100 <= channelToSW && channelToSW <= 116)
-		PHY_SetBBReg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x452);
+		phy_set_bb_reg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x452);
 	else if (118 <= channelToSW)
-		PHY_SetBBReg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x412);
+		phy_set_bb_reg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x412);
 	else
-		PHY_SetBBReg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x96a);
+		phy_set_bb_reg(pAdapter, rFc_area_Jaguar, 0x1ffe0000, 0x96a);
 
 	for (eRFPath = 0; eRFPath < pHalData->NumTotalRFPath; eRFPath++) {
 		/* RF_MOD_AG */
 		if (36 <= channelToSW && channelToSW <= 64)
-			PHY_SetRFReg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, BIT18 | BIT17 | BIT16 | BIT9 | BIT8, 0x101); /* 5'b00101); */
+			phy_set_rf_reg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, BIT18 | BIT17 | BIT16 | BIT9 | BIT8, 0x101); /* 5'b00101); */
 		else if (100 <= channelToSW && channelToSW <= 140)
-			PHY_SetRFReg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, BIT18 | BIT17 | BIT16 | BIT9 | BIT8, 0x301); /* 5'b01101); */
+			phy_set_rf_reg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, BIT18 | BIT17 | BIT16 | BIT9 | BIT8, 0x301); /* 5'b01101); */
 		else if (140 < channelToSW)
-			PHY_SetRFReg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, BIT18 | BIT17 | BIT16 | BIT9 | BIT8, 0x501); /* 5'b10101); */
+			phy_set_rf_reg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, BIT18 | BIT17 | BIT16 | BIT9 | BIT8, 0x501); /* 5'b10101); */
 		else
-			PHY_SetRFReg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, BIT18 | BIT17 | BIT16 | BIT9 | BIT8, 0x000); /* 5'b00000); */
+			phy_set_rf_reg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, BIT18 | BIT17 | BIT16 | BIT9 | BIT8, 0x000); /* 5'b00000); */
 
 		/* <20121109, Kordan> A workaround for 8812A only. */
-		phy_FixSpur_8812A(pAdapter, pHalData->CurrentChannelBW, channelToSW);
+		phy_FixSpur_8812A(pAdapter, pHalData->current_channel_bw, channelToSW);
 
-		PHY_SetRFReg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, bMaskByte0, channelToSW);
+		phy_set_rf_reg(pAdapter, eRFPath, RF_CHNLBW_Jaguar, bMaskByte0, channelToSW);
 
 		/* <20130104, Kordan> APK for MP chip is done on initialization from folder. */
-		if (IS_HARDWARE_TYPE_8821U(pAdapter) && (!IS_NORMAL_CHIP(pHalData->VersionID)) && channelToSW > 14) {
+		if (IS_HARDWARE_TYPE_8821U(pAdapter) && (!IS_NORMAL_CHIP(pHalData->version_id)) && channelToSW > 14) {
 			/* <20121116, Kordan> For better result of APK. Asked by AlexWang. */
 			if (36 <= channelToSW && channelToSW <= 64)
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x710E7);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x710E7);
 			else if (100 <= channelToSW && channelToSW <= 140)
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x716E9);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x716E9);
 			else
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x714E9);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x714E9);
 		} else if (IS_HARDWARE_TYPE_8821S(pAdapter) && channelToSW > 14) {
 			/* <20130111, Kordan> For better result of APK. Asked by Willson. */
 			if (36 <= channelToSW && channelToSW <= 64)
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x714E9);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x714E9);
 			else if (100 <= channelToSW && channelToSW <= 140)
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x110E9);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x110E9);
 			else
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x714E9);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x714E9);
 		} else if (IS_HARDWARE_TYPE_8821E(pAdapter) && channelToSW > 14) {
 			/* <20130613, Kordan> For better result of APK. Asked by Willson. */
 			if (36 <= channelToSW && channelToSW <= 64)
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x114E9);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x114E9);
 			else if (100 <= channelToSW && channelToSW <= 140)
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x110E9);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x110E9);
 			else
-				PHY_SetRFReg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x110E9);
+				phy_set_rf_reg(pAdapter, eRFPath, RF_APK_Jaguar, bRFRegOffsetMask, 0x110E9);
 		}
 	}
 
@@ -1843,15 +1843,15 @@ phy_SwChnlAndSetBwMode8812(
 )
 {
 	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(Adapter);
-	PDM_ODM_T			pDM_Odm = &pHalData->odmpriv;
+	struct PHY_DM_STRUCT			*pDM_Odm = &pHalData->odmpriv;
 	/* RTW_INFO("phy_SwChnlAndSetBwMode8812(): bSwChnl %d, bSetChnlBW %d\n", pHalData->bSwChnl, pHalData->bSetChnlBW); */
 	if (Adapter->bNotifyChannelChange) {
 		RTW_INFO("[%s] bSwChnl=%d, ch=%d, bSetChnlBW=%d, bw=%d\n",
 			 __FUNCTION__,
 			 pHalData->bSwChnl,
-			 pHalData->CurrentChannel,
+			 pHalData->current_channel,
 			 pHalData->bSetChnlBW,
-			 pHalData->CurrentChannelBW);
+			 pHalData->current_channel_bw);
 	}
 
 	if (RTW_CANNOT_RUN(Adapter))
@@ -1868,8 +1868,8 @@ phy_SwChnlAndSetBwMode8812(
 		pHalData->bSetChnlBW = _FALSE;
 	}
 
-	ODM_ClearTxPowerTrackingState(&pHalData->odmpriv);
-	PHY_SetTxPowerLevel8812(Adapter, pHalData->CurrentChannel);
+	odm_clear_txpowertracking_state(&pHalData->odmpriv);
+	PHY_SetTxPowerLevel8812(Adapter, pHalData->current_channel);
 
 	if (IS_HARDWARE_TYPE_8812(Adapter))
 		phy_InitRssiTRSW(Adapter);
@@ -1881,11 +1881,11 @@ phy_SwChnlAndSetBwMode8812(
 	   ) {
 		if (IS_HARDWARE_TYPE_8812(Adapter)) {
 #if (RTL8812A_SUPPORT == 1)
-			PHY_IQCalibrate_8812A(Adapter, _FALSE);
+			phy_iq_calibrate_8812a(Adapter, _FALSE);
 #endif
 		} else if (IS_HARDWARE_TYPE_8821(Adapter)) {
 #if (RTL8821A_SUPPORT == 1)
-			PHY_IQCalibrate_8821A(pDM_Odm, _FALSE);
+			phy_iq_calibrate_8821a(pDM_Odm, _FALSE);
 #endif
 		}
 		pHalData->bNeedIQK = _FALSE;
@@ -1906,8 +1906,8 @@ PHY_HandleSwChnlAndSetBW8812(
 {
 	PADAPTER			pDefAdapter =  GetDefaultAdapter(Adapter);
 	PHAL_DATA_TYPE		pHalData = GET_HAL_DATA(pDefAdapter);
-	u8					tmpChannel = pHalData->CurrentChannel;
-	CHANNEL_WIDTH		tmpBW = pHalData->CurrentChannelBW;
+	u8					tmpChannel = pHalData->current_channel;
+	CHANNEL_WIDTH		tmpBW = pHalData->current_channel_bw;
 	u8					tmpnCur40MhzPrimeSC = pHalData->nCur40MhzPrimeSC;
 	u8					tmpnCur80MhzPrimeSC = pHalData->nCur80MhzPrimeSC;
 	u8					tmpCenterFrequencyIndex1 = pHalData->CurrentCenterFrequencyIndex1;
@@ -1923,7 +1923,7 @@ PHY_HandleSwChnlAndSetBW8812(
 
 	/* skip change for channel or bandwidth is the same */
 	if (bSwitchChannel) {
-		if (pHalData->CurrentChannel != ChannelNum) {
+		if (pHalData->current_channel != ChannelNum) {
 			if (HAL_IsLegalChannel(Adapter, ChannelNum))
 				pHalData->bSwChnl = _TRUE;
 			else
@@ -1935,7 +1935,7 @@ PHY_HandleSwChnlAndSetBW8812(
 		if (pHalData->bChnlBWInitialized == _FALSE) {
 			pHalData->bChnlBWInitialized = _TRUE;
 			pHalData->bSetChnlBW = _TRUE;
-		} else if ((pHalData->CurrentChannelBW != ChnlWidth) ||
+		} else if ((pHalData->current_channel_bw != ChnlWidth) ||
 			   (pHalData->nCur40MhzPrimeSC != ChnlOffsetOf40MHz) ||
 			   (pHalData->nCur80MhzPrimeSC != ChnlOffsetOf80MHz) ||
 			(pHalData->CurrentCenterFrequencyIndex1 != CenterFrequencyIndex1))
@@ -1949,13 +1949,13 @@ PHY_HandleSwChnlAndSetBW8812(
 
 
 	if (pHalData->bSwChnl) {
-		pHalData->CurrentChannel = ChannelNum;
+		pHalData->current_channel = ChannelNum;
 		pHalData->CurrentCenterFrequencyIndex1 = ChannelNum;
 	}
 
 
 	if (pHalData->bSetChnlBW) {
-		pHalData->CurrentChannelBW = ChnlWidth;
+		pHalData->current_channel_bw = ChnlWidth;
 #if 0
 		if (ExtChnlOffsetOf40MHz == EXTCHNL_OFFSET_LOWER)
 			pHalData->nCur40MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_UPPER;
@@ -1983,18 +1983,18 @@ PHY_HandleSwChnlAndSetBW8812(
 		phy_SwChnlAndSetBwMode8812(Adapter);
 	else {
 		if (pHalData->bSwChnl) {
-			pHalData->CurrentChannel = tmpChannel;
+			pHalData->current_channel = tmpChannel;
 			pHalData->CurrentCenterFrequencyIndex1 = tmpChannel;
 		}
 		if (pHalData->bSetChnlBW) {
-			pHalData->CurrentChannelBW = tmpBW;
+			pHalData->current_channel_bw = tmpBW;
 			pHalData->nCur40MhzPrimeSC = tmpnCur40MhzPrimeSC;
 			pHalData->nCur80MhzPrimeSC = tmpnCur80MhzPrimeSC;
 			pHalData->CurrentCenterFrequencyIndex1 = tmpCenterFrequencyIndex1;
 		}
 	}
 
-	/* RTW_INFO("Channel %d ChannelBW %d ",pHalData->CurrentChannel, pHalData->CurrentChannelBW); */
+	/* RTW_INFO("Channel %d ChannelBW %d ",pHalData->current_channel, pHalData->current_channel_bw); */
 	/* RTW_INFO("40MhzPrimeSC %d 80MhzPrimeSC %d ",pHalData->nCur40MhzPrimeSC, pHalData->nCur80MhzPrimeSC); */
 	/* RTW_INFO("CenterFrequencyIndex1 %d\n",pHalData->CurrentCenterFrequencyIndex1); */
 

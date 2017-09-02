@@ -432,13 +432,14 @@ NDIS_STATUS oid_rt_get_channelplan_hdl(struct oid_par_priv *poid_par_priv)
 {
 	NDIS_STATUS		status = NDIS_STATUS_SUCCESS;
 	PADAPTER		padapter = (PADAPTER)(poid_par_priv->adapter_context);
+	struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
 
 	if (poid_par_priv->type_of_oid != QUERY_OID) {
 		status = NDIS_STATUS_NOT_ACCEPTED;
 		return status;
 	}
 	*poid_par_priv->bytes_rw = poid_par_priv->information_buf_len;
-	*(u16 *)poid_par_priv->information_buf = padapter->mlmepriv.ChannelPlan ;
+	*(u16 *)poid_par_priv->information_buf = rfctl->ChannelPlan;
 
 	return status;
 }
@@ -446,13 +447,14 @@ NDIS_STATUS oid_rt_set_channelplan_hdl(struct oid_par_priv *poid_par_priv)
 {
 	NDIS_STATUS		status = NDIS_STATUS_SUCCESS;
 	PADAPTER		padapter = (PADAPTER)(poid_par_priv->adapter_context);
+	struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
 
 	if (poid_par_priv->type_of_oid != SET_OID) {
 		status = NDIS_STATUS_NOT_ACCEPTED;
 		return status;
 	}
 
-	padapter->mlmepriv.ChannelPlan  = *(u16 *)poid_par_priv->information_buf ;
+	rfctl->ChannelPlan  = *(u16 *)poid_par_priv->information_buf;
 
 	return status;
 }

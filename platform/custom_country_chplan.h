@@ -22,7 +22,6 @@
 #error "Before removing these error notifications, please make sure regulatory certification requirements of your target markets"
 
 static const struct country_chplan CUSTOMIZED_country_chplan_map[] = {
-	COUNTRY_CHPLAN_ENT("TW", 0x39, 1, 0xFF), /* Taiwan */
+	COUNTRY_CHPLAN_ENT("TW", 0x62, 1, 0x3FF), /* Taiwan */
 };
 
-static const u16 CUSTOMIZED_country_chplan_map_sz = sizeof(CUSTOMIZED_country_chplan_map) / sizeof(struct country_chplan);
