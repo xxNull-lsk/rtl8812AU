@@ -1754,7 +1754,7 @@ MODULE_NAME := wlan
 endif 
 
 # ARM64 - odroid-c2 and such
-ifeq ($(CONFIG_PLATFORM_ODROID_C2), y)
+ifeq ($(CONFIG_PLATFORM_ARM64), y)
 EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
 ARCH ?= arm64
 CROSS_COMPILE ?=
