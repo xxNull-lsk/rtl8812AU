@@ -22,6 +22,9 @@
 
 int usb_init_recv_priv(_adapter *padapter, u16 ini_in_buf_sz);
 void usb_free_recv_priv(_adapter *padapter, u16 ini_in_buf_sz);
+#ifdef CONFIG_FW_C2H_REG
+void usb_c2h_hisr_hdl(_adapter *adapter, u8 *buf);
+#endif
 
 u8 rtw_set_hal_ops(_adapter *padapter);
 

@@ -1,7 +1,7 @@
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
- *                                        
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
  * published by the Free Software Foundation.
@@ -24,7 +24,7 @@
 #define DFS_VERSION	"0.0"
 
 /* ============================================================
-  Definition 
+  Definition
  ============================================================
 */
 
@@ -39,38 +39,37 @@
  ============================================================
 */
 
-typedef enum _tag_PhyDM_DFS_REGION_DOMAIN {
+enum phydm_dfs_region_domain {
 	PHYDM_DFS_DOMAIN_UNKNOWN = 0,
 	PHYDM_DFS_DOMAIN_FCC = 1,
 	PHYDM_DFS_DOMAIN_MKK = 2,
 	PHYDM_DFS_DOMAIN_ETSI = 3,
-} PHYDM_DFS_REGION_DOMAIN;
+};
 
-/* 
+/*
 ============================================================
   function prototype
 ============================================================
 */
 #if defined(CONFIG_PHYDM_DFS_MASTER)
-VOID phydm_radar_detect_reset(PVOID pDM_VOID);
-VOID phydm_radar_detect_disable(PVOID pDM_VOID);
-VOID phydm_radar_detect_enable(PVOID pDM_VOID);
-BOOLEAN phydm_radar_detect(PVOID pDM_VOID);
+	void phydm_radar_detect_reset(void *p_dm_void);
+	void phydm_radar_detect_disable(void *p_dm_void);
+	void phydm_radar_detect_enable(void *p_dm_void);
+	boolean phydm_radar_detect(void *p_dm_void);
 #endif /* defined(CONFIG_PHYDM_DFS_MASTER) */
 
-BOOLEAN
+boolean
 phydm_dfs_master_enabled(
-	IN		PVOID		pDM_VOID
-	);
+	void		*p_dm_void
+);
 
-VOID
+void
 phydm_dfs_debug(
-	IN		PVOID		pDM_VOID,
-	IN		u4Byte		*const argv,
-	IN		u4Byte		*_used,
-	OUT		char		*output,
-	IN		u4Byte		*_out_len
-	);
+	void		*p_dm_void,
+	u32		*const argv,
+	u32		*_used,
+	char		*output,
+	u32		*_out_len
+);
 
 #endif /*#ifndef __PHYDM_DFS_H__ */
-

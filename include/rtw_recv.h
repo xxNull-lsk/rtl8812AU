@@ -51,6 +51,16 @@
 		#define NR_PREALLOC_RECV_SKB 8
 	#endif /* CONFIG_PREALLOC_RX_SKB_BUFFER */
 
+	#ifdef CONFIG_RTW_NAPI
+		#define RTL_NAPI_WEIGHT (32)
+	#endif
+#endif
+
+#if defined(CONFIG_RTL8821C) && defined(CONFIG_SDIO_HCI) && defined(CONFIG_RECV_THREAD_MODE)
+	#ifdef NR_RECVBUFF
+	#undef NR_RECVBUFF
+	#define NR_RECVBUFF (32)
+	#endif
 #endif
 
 #define NR_RECVFRAME 256
@@ -258,6 +268,7 @@ struct rx_pkt_attrib	{
 	u8	key_index;
 
 	u8	data_rate;
+	u8 ch; /* RX channel */
 	u8	bw;
 	u8	stbc;
 	u8	ldpc;
@@ -368,7 +379,7 @@ struct recv_priv {
 
 #ifdef CONFIG_RECV_THREAD_MODE
 	_sema	recv_sema;
-	_sema	terminate_recvthread_sema;
+
 #endif
 
 	/* _queue	blk_strms[MAX_RX_NUMBLKS];    */ /* keeping the block ack frame until return ack */
@@ -395,7 +406,9 @@ struct recv_priv {
 	NDIS_EVENT	recv_resource_evt ;
 #endif
 
-	u32	bIsAnyNonBEPkts;
+
+	u32 is_any_non_be_pkts;
+
 	u64	rx_bytes;
 	u64	rx_pkts;
 	u64	rx_drop;
@@ -430,6 +443,9 @@ struct recv_priv {
 #endif /* PLATFORM_FREEBSD */
 	struct sk_buff_head free_recv_skb_queue;
 	struct sk_buff_head rx_skb_queue;
+#ifdef CONFIG_RTW_NAPI
+		struct sk_buff_head rx_napi_skb_queue;
+#endif 
 #ifdef CONFIG_RX_INDICATE_QUEUE
 	struct task rx_indicate_tasklet;
 	struct ifqueue rx_indicate_queue;
@@ -654,6 +670,10 @@ void rtw_reordering_ctrl_timeout_handler(void *pcontext);
 void rx_query_phy_status(union recv_frame *rframe, u8 *phy_stat);
 int rtw_inc_and_chk_continual_no_rx_packet(struct sta_info *sta, int tid_index);
 void rtw_reset_continual_no_rx_packet(struct sta_info *sta, int tid_index);
+
+#ifdef CONFIG_RECV_THREAD_MODE
+thread_return rtw_recv_thread(thread_context context);
+#endif
 
 __inline static u8 *get_rxmem(union recv_frame *precvframe)
 {

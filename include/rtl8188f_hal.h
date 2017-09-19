@@ -123,9 +123,11 @@ typedef struct _RT_8188F_FIRMWARE_HDR {
 #endif
 
 /* For WoWLan , more reserved page
- * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:2,GTK EXT MEM:2, PNO: 6 */
+ * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:2,GTK EXT MEM:2, AOAC rpt:1 ,PNO: 6
+ * NS offload:2 NDP info: 1
+ */
 #ifdef CONFIG_WOWLAN
-	#define WOWLAN_PAGE_NUM_8188F	0x07
+	#define WOWLAN_PAGE_NUM_8188F	0x0b
 #else
 	#define WOWLAN_PAGE_NUM_8188F	0x00
 #endif
@@ -160,14 +162,14 @@ typedef struct _RT_8188F_FIRMWARE_HDR {
 #include "HalVerDef.h"
 #include "hal_com.h"
 
-#define EFUSE_OOB_PROTECT_BYTES		15
+#define EFUSE_OOB_PROTECT_BYTES (34 + 1)
 
 #define HAL_EFUSE_MEMORY
 
 #define HWSET_MAX_SIZE_8188F			512
-#define EFUSE_REAL_CONTENT_LEN_8188F		512
+#define EFUSE_REAL_CONTENT_LEN_8188F	256
 #define EFUSE_MAP_LEN_8188F				512
-#define EFUSE_MAX_SECTION_8188F			64
+#define EFUSE_MAX_SECTION_8188F			(EFUSE_MAP_LEN_8188F / 8)
 
 #define EFUSE_IC_ID_OFFSET			506	/* For some inferiority IC purpose. added by Roger, 2009.09.02. */
 #define AVAILABLE_EFUSE_ADDR(addr)	(addr < EFUSE_REAL_CONTENT_LEN_8188F)
@@ -184,12 +186,6 @@ typedef struct _RT_8188F_FIRMWARE_HDR {
 #define EFUSE_BT_MAX_SECTION			128		/* 1024/8 */
 
 #define EFUSE_PROTECT_BYTES_BANK		16
-
-typedef struct _C2H_EVT_HDR {
-	u8	CmdID;
-	u8	CmdLen;
-	u8	CmdSeq;
-} __attribute__((__packed__)) C2H_EVT_HDR, *PC2H_EVT_HDR;
 
 #define INCLUDE_MULTI_FUNC_BT(_Adapter)		(GET_HAL_DATA(_Adapter)->MultiFunc & RT_MULTI_FUNC_BT)
 #define INCLUDE_MULTI_FUNC_GPS(_Adapter)	(GET_HAL_DATA(_Adapter)->MultiFunc & RT_MULTI_FUNC_GPS)
@@ -228,19 +224,12 @@ void Hal_EfuseParseKFreeData_8188F(PADAPTER pAdapter, u8 *hwinfo, BOOLEAN AutoLo
 VOID Hal_EfuseParseVoltage_8188F(PADAPTER pAdapter, u8 *hwinfo, BOOLEAN	AutoLoadFail);
 #endif
 
-#ifdef CONFIG_C2H_PACKET_EN
-void rtl8188f_c2h_packet_handler(PADAPTER padapter, u8 *pbuf, u16 length);
-#endif
-
 void rtl8188f_set_pll_ref_clk_sel(_adapter *adapter, u8 sel);
 
 void rtl8188f_set_hal_ops(struct hal_ops *pHalFunc);
 void init_hal_spec_8188f(_adapter *adapter);
 void SetHwReg8188F(PADAPTER padapter, u8 variable, u8 *val);
 void GetHwReg8188F(PADAPTER padapter, u8 variable, u8 *val);
-#ifdef CONFIG_C2H_PACKET_EN
-void SetHwRegWithBuf8188F(PADAPTER padapter, u8 variable, u8 *pbuf, int len);
-#endif /* CONFIG_C2H_PACKET_EN */
 u8 SetHalDefVar8188F(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
 u8 GetHalDefVar8188F(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
 
@@ -272,11 +261,7 @@ int FirmwareDownloadBT(IN PADAPTER Adapter, PRT_MP_FIRMWARE pFirmware);
 #endif
 
 void CCX_FwC2HTxRpt_8188f(PADAPTER padapter, u8 *pdata, u8 len);
-#ifdef CONFIG_FW_C2H_DEBUG
-void Debug_FwC2H_8188f(PADAPTER padapter, u8 *pdata, u8 len);
-#endif /* CONFIG_FW_C2H_DEBUG */
-s32 c2h_id_filter_ccx_8188f(u8 *buf);
-s32 c2h_handler_8188f(PADAPTER padapter, u8 *pC2hEvent);
+
 u8 MRateToHwRate8188F(u8  rate);
 u8 HwRateToMRate8188F(u8	 rate);
 

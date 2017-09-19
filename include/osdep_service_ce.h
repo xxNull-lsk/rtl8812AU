@@ -45,8 +45,11 @@ typedef u32	_irqL;
 
 typedef NDIS_HANDLE  _nic_hdl;
 
-
-typedef NDIS_MINIPORT_TIMER    _timer;
+struct timer_list {
+	NDIS_MINIPORT_TIMER ndis_timer;
+	void (*function)(void *);
+	void *arg;
+};
 
 struct	__queue	{
 	LIST_ENTRY	queue;
@@ -62,7 +65,6 @@ typedef DWORD thread_return;
 typedef void*	thread_context;
 typedef NDIS_WORK_ITEM _workitem;
 
-#define thread_exit() ExitThread(STATUS_SUCCESS); return 0;
 
 
 #define SEMA_UPBND	(0x7FFFFFFF)   //8192
@@ -122,21 +124,32 @@ __inline static void rtw_list_delete(_list *plist)
 	InitializeListHead(plist);
 }
 
-#define RTW_TIMER_HDL_ARGS IN PVOID SystemSpecific1, IN PVOID FunctionContext, IN PVOID SystemSpecific2, IN PVOID SystemSpecific3
-
-__inline static void _init_timer(_timer *ptimer,_nic_hdl nic_hdl,void *pfunc,PVOID cntx)
+static inline void timer_hdl(
+	IN PVOID SystemSpecific1,
+	IN PVOID FunctionContext,
+	IN PVOID SystemSpecific2,
+	IN PVOID SystemSpecific3)
 {
-	NdisMInitializeTimer(ptimer, nic_hdl, pfunc, cntx);
+	_timer *timer = (_timer *)FunctionContext;
+
+	timer->function(timer->arg);
 }
 
-__inline static void _set_timer(_timer *ptimer,u32 delay_time)
+static inline void _init_timer(_timer *ptimer, _nic_hdl nic_hdl, void *pfunc, void *cntx)
 {
- 	NdisMSetTimer(ptimer,delay_time);
+	ptimer->function = pfunc;
+	ptimer->arg = cntx;
+	NdisMInitializeTimer(&ptimer->ndis_timer, nic_hdl, timer_hdl, ptimer);
 }
 
-__inline static void _cancel_timer(_timer *ptimer,u8 *bcancelled)
+static inline void _set_timer(_timer *ptimer, u32 delay_time)
 {
-	NdisMCancelTimer(ptimer,bcancelled);
+	NdisMSetTimer(ptimer, delay_time);
+}
+
+static inline void _cancel_timer(_timer *ptimer, u8 *bcancelled)
+{
+	NdisMCancelTimer(ptimer, bcancelled);
 }
 
 __inline static void _init_workitem(_workitem *pwork, void *pfunc, PVOID cntx)

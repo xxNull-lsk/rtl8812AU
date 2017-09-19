@@ -134,7 +134,7 @@ typedef struct _RT_8188E_FIRMWARE_HDR {
  * must reserved about 7 pages for LPS =>  176-7 = 169 (0xA9)
  * 2*BCN / 1*ps-poll / 1*null-data /1*prob_rsp /1*QOS null-data /1*BT QOS null-data  */
 
-#define BCNQ_PAGE_NUM_88E		0x08
+#define BCNQ_PAGE_NUM_88E		0x09
 
 /* For WoWLan , more reserved page */
 #ifdef CONFIG_WOWLAN

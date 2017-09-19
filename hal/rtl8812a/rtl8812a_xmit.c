@@ -441,16 +441,16 @@ BWMapping_8812(
 	u8	BWSettingOfDesc = 0;
 	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
 
-	/* RTW_INFO("BWMapping pHalData->CurrentChannelBW %d, pattrib->bwmode %d\n",pHalData->CurrentChannelBW,pattrib->bwmode); */
+	/* RTW_INFO("BWMapping pHalData->current_channel_bw %d, pattrib->bwmode %d\n",pHalData->current_channel_bw,pattrib->bwmode); */
 
-	if (pHalData->CurrentChannelBW == CHANNEL_WIDTH_80) {
+	if (pHalData->current_channel_bw == CHANNEL_WIDTH_80) {
 		if (pattrib->bwmode == CHANNEL_WIDTH_80)
 			BWSettingOfDesc = 2;
 		else if (pattrib->bwmode == CHANNEL_WIDTH_40)
 			BWSettingOfDesc = 1;
 		else
 			BWSettingOfDesc = 0;
-	} else if (pHalData->CurrentChannelBW == CHANNEL_WIDTH_40) {
+	} else if (pHalData->current_channel_bw == CHANNEL_WIDTH_40) {
 		if ((pattrib->bwmode == CHANNEL_WIDTH_40) || (pattrib->bwmode == CHANNEL_WIDTH_80))
 			BWSettingOfDesc = 1;
 		else
@@ -469,9 +469,9 @@ SCMapping_8812(
 {
 	u8	SCSettingOfDesc = 0;
 	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
-	/* RTW_INFO("SCMapping: pHalData->CurrentChannelBW %d, pHalData->nCur80MhzPrimeSC %d, pHalData->nCur40MhzPrimeSC %d\n",pHalData->CurrentChannelBW,pHalData->nCur80MhzPrimeSC,pHalData->nCur40MhzPrimeSC); */
+	/* RTW_INFO("SCMapping: pHalData->current_channel_bw %d, pHalData->nCur80MhzPrimeSC %d, pHalData->nCur40MhzPrimeSC %d\n",pHalData->current_channel_bw,pHalData->nCur80MhzPrimeSC,pHalData->nCur40MhzPrimeSC); */
 
-	if (pHalData->CurrentChannelBW == CHANNEL_WIDTH_80) {
+	if (pHalData->current_channel_bw == CHANNEL_WIDTH_80) {
 		if (pattrib->bwmode == CHANNEL_WIDTH_80)
 			SCSettingOfDesc = VHT_DATA_SC_DONOT_CARE;
 		else if (pattrib->bwmode == CHANNEL_WIDTH_40) {
@@ -493,8 +493,8 @@ SCMapping_8812(
 			else
 				RTW_INFO("SCMapping: DONOT CARE Mode Setting\n");
 		}
-	} else if (pHalData->CurrentChannelBW == CHANNEL_WIDTH_40) {
-		/* RTW_INFO("SCMapping: HT Case: pHalData->CurrentChannelBW %d, pHalData->nCur40MhzPrimeSC %d\n",pHalData->CurrentChannelBW,pHalData->nCur40MhzPrimeSC); */
+	} else if (pHalData->current_channel_bw == CHANNEL_WIDTH_40) {
+		/* RTW_INFO("SCMapping: HT Case: pHalData->current_channel_bw %d, pHalData->nCur40MhzPrimeSC %d\n",pHalData->current_channel_bw,pHalData->nCur40MhzPrimeSC); */
 
 		if (pattrib->bwmode == CHANNEL_WIDTH_40)
 			SCSettingOfDesc = VHT_DATA_SC_DONOT_CARE;

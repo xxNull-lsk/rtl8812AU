@@ -108,7 +108,7 @@ u8 PHY_GetTxPowerIndex_8812A(
 	struct txpwr_idx_comp *tic
 );
 
-u32 PHY_GetTxBBSwing_8812A(
+u32 phy_get_tx_bb_swing_8812a(
 	IN	PADAPTER	Adapter,
 	IN	BAND_TYPE	Band,
 	IN	u8			RFPath
@@ -139,9 +139,9 @@ PHY_SetSwChnlBWMode8812(
  *   */
 
 VOID
-PHY_SetRFPathSwitch_8812A(
+phy_set_rf_path_switch_8812a(
 	IN	PADAPTER	pAdapter,
-	IN	BOOLEAN		bMain
+	IN	bool		bMain
 );
 
 /*--------------------------Exported Function prototype---------------------*/

@@ -33,6 +33,7 @@
 #endif
 /* #include <linux/smp_lock.h> */
 #include <linux/netdevice.h>
+#include <linux/inetdevice.h>
 #include <linux/skbuff.h>
 #include <linux/circ_buf.h>
 #include <asm/uaccess.h>
@@ -52,6 +53,7 @@
 #include <linux/etherdevice.h>
 #include <linux/wireless.h>
 #include <net/iw_handler.h>
+#include <net/addrconf.h>
 #include <linux/if_arp.h>
 #include <linux/rtnetlink.h>
 #include <linux/delay.h>
@@ -84,7 +86,11 @@
 
 /* Monitor mode */
 #include <net/ieee80211_radiotap.h>
-#include <linux/ieee80211.h>
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24))
+	#include <linux/ieee80211.h>
+#endif
+
 #ifdef CONFIG_IOCTL_CFG80211
 	/*	#include <linux/ieee80211.h> */
 	#include <net/cfg80211.h>
@@ -129,6 +135,27 @@
 	#endif
 #endif
 
+#if defined(CONFIG_RTW_GRO) && (!defined(CONFIG_RTW_NAPI))
+
+	#error "Enable NAPI before enable GRO\n"
+
+#endif
+
+
+#if (KERNEL_VERSION(2, 6, 29) > LINUX_VERSION_CODE && defined(CONFIG_RTW_NAPI))
+
+	#undef CONFIG_RTW_NAPI
+	/*#warning "Linux Kernel version too old to support NAPI (should newer than 2.6.29)\n"*/
+
+#endif
+
+#if (KERNEL_VERSION(2, 6, 33) > LINUX_VERSION_CODE && defined(CONFIG_RTW_GRO))
+
+	#undef CONFIG_RTW_GRO
+	/*#warning "Linux Kernel version too old to support GRO(should newer than 2.6.33)\n"*/
+
+#endif
+
 typedef struct	semaphore _sema;
 typedef	spinlock_t	_lock;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
@@ -137,6 +164,7 @@ typedef	spinlock_t	_lock;
 	typedef struct semaphore	_mutex;
 #endif
 typedef struct timer_list _timer;
+typedef struct completion _completion;
 
 struct	__queue	{
 	struct	list_head	queue;
@@ -156,8 +184,6 @@ typedef	struct	net_device *_nic_hdl;
 typedef void		*_thread_hdl_;
 typedef int		thread_return;
 typedef void	*thread_context;
-
-#define thread_exit() complete_and_exit(NULL, 0)
 
 typedef void timer_hdl_return;
 typedef void *timer_hdl_context;
@@ -267,8 +293,6 @@ __inline static void rtw_list_delete(_list *plist)
 	list_del_init(plist);
 }
 
-#define RTW_TIMER_HDL_ARGS void *FunctionContext
-
 __inline static void _init_timer(_timer *ptimer, _nic_hdl nic_hdl, void *pfunc, void *cntx)
 {
 	/* setup_timer(ptimer, pfunc,(u32)cntx);	 */
@@ -284,10 +308,8 @@ __inline static void _set_timer(_timer *ptimer, u32 delay_time)
 
 __inline static void _cancel_timer(_timer *ptimer, u8 *bcancelled)
 {
-	del_timer_sync(ptimer);
-	*bcancelled = 1;
+	*bcancelled = del_timer_sync(ptimer) == 1 ? 1 : 0;
 }
-
 
 static inline void _init_workitem(_workitem *pwork, void *pfunc, void *cntx)
 {
@@ -413,11 +435,11 @@ static inline int rtw_merge_string(char *dst, int dst_len, const char *src1, con
 #define NDEV_FMT "%s"
 #define NDEV_ARG(ndev) ndev->name
 #define ADPT_FMT "%s"
-#define ADPT_ARG(adapter) adapter->pnetdev->name
+#define ADPT_ARG(adapter) (adapter->pnetdev ? adapter->pnetdev->name : NULL)
 #define FUNC_NDEV_FMT "%s(%s)"
 #define FUNC_NDEV_ARG(ndev) __func__, ndev->name
 #define FUNC_ADPT_FMT "%s(%s)"
-#define FUNC_ADPT_ARG(adapter) __func__, adapter->pnetdev->name
+#define FUNC_ADPT_ARG(adapter) __func__, (adapter->pnetdev ? adapter->pnetdev->name : NULL)
 
 struct rtw_netdev_priv_indicator {
 	void *priv;

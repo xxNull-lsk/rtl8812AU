@@ -542,7 +542,7 @@ _InitPageBoundary_8812AUsb(
 	/* u2Byte			Offset; */
 	/* BOOLEAN			bSupportRemoteWakeUp; */
 
-	/* Adapter->HalFunc.GetHalDefVarHandler(Adapter, HAL_DEF_WOWLAN , &bSupportRemoteWakeUp); */
+	/* Adapter->HalFunc.get_hal_def_var_handler(Adapter, HAL_DEF_WOWLAN , &bSupportRemoteWakeUp); */
 	/* RX Page Boundary */
 	/* srand(static_cast<unsigned int>(time(NULL)) ); */
 
@@ -1181,8 +1181,8 @@ static VOID _BBTurnOnBlock(
 	return;
 #endif
 
-	PHY_SetBBReg(Adapter, rFPGA0_RFMOD, bCCKEn, 0x1);
-	PHY_SetBBReg(Adapter, rFPGA0_RFMOD, bOFDMEn, 0x1);
+	phy_set_bb_reg(Adapter, rFPGA0_RFMOD, bCCKEn, 0x1);
+	phy_set_bb_reg(Adapter, rFPGA0_RFMOD, bOFDMEn, 0x1);
 }
 
 static VOID _RfPowerSave(
@@ -1202,7 +1202,7 @@ static VOID _RfPowerSave(
 		MgntActSet_RF_State(Adapter, eRfOff, RF_CHANGE_BY_SW);
 		/* Those action will be discard in MgntActSet_RF_State because off the same state */
 		for (eRFPath = 0; eRFPath < pHalData->NumTotalRFPath; eRFPath++)
-			PHY_SetRFReg(Adapter, eRFPath, 0x4, 0xC00, 0x0);
+			phy_set_rf_reg(Adapter, eRFPath, 0x4, 0xC00, 0x0);
 	} else if (pMgntInfo->RfOffReason > RF_CHANGE_BY_PS) { /* H/W or S/W RF OFF before sleep. */
 		MgntActSet_RF_State(Adapter, eRfOff, pMgntInfo->RfOffReason);
 	} else {
@@ -1432,7 +1432,7 @@ u32 rtl8812au_hal_init(PADAPTER Adapter)
 			/* pHalData->bIQKInitialized = _TRUE; */
 		}
 
-		/* ODM_TXPowerTrackingCheck(&pHalData->odmpriv ); */
+		/* odm_txpowertracking_check(&pHalData->odmpriv ); */
 		/* PHY_LCCalibrate_8812A(Adapter); */
 
 		goto exit;
@@ -1509,12 +1509,12 @@ u32 rtl8812au_hal_init(PADAPTER Adapter)
 		status = FirmwareDownload8812(Adapter, _FALSE);
 		if (status != _SUCCESS) {
 			RTW_INFO("%s: Download Firmware failed!!\n", __FUNCTION__);
-			Adapter->bFWReady = _FALSE;
+			pHalData->bFWReady = _FALSE;
 			pHalData->fw_ractrl = _FALSE;
 			/* return status; */
 		} else {
 			RTW_INFO("%s: Download Firmware Success!!\n", __FUNCTION__);
-			Adapter->bFWReady = _TRUE;
+			pHalData->bFWReady = _TRUE;
 			pHalData->fw_ractrl = _TRUE;
 		}
 	}
@@ -1530,7 +1530,7 @@ u32 rtl8812au_hal_init(PADAPTER Adapter)
 
 	/* Save target channel */
 	/* <Roger_Notes> Current Channel will be updated again later. */
-	pHalData->CurrentChannel = 0;/* set 0 to trigger switch correct channel */
+	pHalData->current_channel = 0;/* set 0 to trigger switch correct channel */
 
 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_MAC);
 #if (HAL_MAC_ENABLE == 1)
@@ -1624,7 +1624,7 @@ u32 rtl8812au_hal_init(PADAPTER Adapter)
 	if (pHalData->rf_type == RF_1T1R && IS_HARDWARE_TYPE_8812AU(Adapter))
 		PHY_BB8812_Config_1T(Adapter);
 	if (Adapter->registrypriv.rf_config == RF_1T2R && IS_HARDWARE_TYPE_8812AU(Adapter))
-		PHY_SetBBReg(Adapter, rTxPath_Jaguar, bMaskLWord, 0x1111);
+		phy_set_bb_reg(Adapter, rTxPath_Jaguar, bMaskLWord, 0x1111);
 #endif
 
 	if (Adapter->registrypriv.channel <= 14)
@@ -1669,7 +1669,7 @@ u32 rtl8812au_hal_init(PADAPTER Adapter)
 
 #if (MP_DRIVER == 1)
 	if (Adapter->registrypriv.mp_mode == 1) {
-		Adapter->mppriv.channel = pHalData->CurrentChannel;
+		Adapter->mppriv.channel = pHalData->current_channel;
 		MPT_InitializeAdapter(Adapter, Adapter->mppriv.channel);
 	} else
 #endif  /* #if (MP_DRIVER == 1) */
@@ -1722,7 +1722,7 @@ u32 rtl8812au_hal_init(PADAPTER Adapter)
 
 			HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_PW_TRACK);
 
-			/* ODM_TXPowerTrackingCheck(&pHalData->odmpriv ); */
+			/* odm_txpowertracking_check(&pHalData->odmpriv ); */
 
 
 			HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_LCK);
@@ -1816,7 +1816,7 @@ hal_poweroff_8812au(
 		HalPwrSeqCmdParsing(Adapter, PWR_CUT_ALL_MSK, PWR_FAB_ALL_MSK, PWR_INTF_USB_MSK, Rtl8812_NIC_LPS_ENTER_FLOW);
 
 	if ((rtw_read8(Adapter, REG_MCUFWDL) & RAM_DL_SEL) &&
-	    Adapter->bFWReady) /* 8051 RAM code */
+	    GET_HAL_DATA(Adapter)->bFWReady) /* 8051 RAM code */
 		_8051Reset8812(Adapter);
 
 	/* Reset MCU. Suggested by Filen. 2011.01.26. by tynli. */
@@ -1835,7 +1835,7 @@ hal_poweroff_8812au(
 	bMacPwrCtrlOn = _FALSE;
 	rtw_hal_set_hwreg(Adapter, HW_VAR_APFM_ON_MAC, &bMacPwrCtrlOn);
 
-	Adapter->bFWReady = _FALSE;
+	GET_HAL_DATA(Adapter)->bFWReady = _FALSE;
 
 	if (ori_fsmc0 & 0x8000) {
 		utemp = rtw_read16(Adapter, REG_APS_FSMCO);
@@ -2346,7 +2346,7 @@ static void Hal_ReadPROMContent_8812A(
 	InitAdapterVariablesByPROM_8812AU(Adapter);
 }
 
-void
+u8
 ReadAdapterInfo8812AU(
 	IN PADAPTER			Adapter
 )
@@ -2356,6 +2356,8 @@ ReadAdapterInfo8812AU(
 
 	/* We need to define the RF type after all PROM value is recognized. */
 	ReadRFType8812A(Adapter);
+
+	return _SUCCESS;
 }
 
 void UpdateInterruptMask8812AU(PADAPTER padapter, u8 bHIMR0 , u32 AddMSR, u32 RemoveMSR)
@@ -2475,6 +2477,20 @@ void GetHwReg8812AU(PADAPTER Adapter, u8 variable, u8 *val)
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
 
 	switch (variable) {
+	case HW_VAR_CPWM:
+#ifdef CONFIG_LPS_LCLK
+		*val = rtw_read8(Adapter, REG_USB_HCPWM);
+		/*
+			RTW_INFO("##### REG_USB_HCPWM(0x%02x) = 0x%02x #####\n",
+			REG_USB_HCPWM, *val);
+		*/
+#endif /* CONFIG_LPS_LCLK */
+		break;
+	case HW_VAR_RPWM_TOG:
+#ifdef CONFIG_LPS_LCLK
+		*val = rtw_read8(Adapter, REG_USB_HRPWM) & BIT7;
+#endif /* CONFIG_LPS_LCLK */
+		break;
 	default:
 		GetHwReg8812A(Adapter, variable, val);
 		break;
@@ -2621,7 +2637,7 @@ static u8 rtl8812au_ps_func(PADAPTER Adapter, HAL_INTF_PS_FUNC efunc_id, u8 *val
 
 void rtl8812au_set_hal_ops(_adapter *padapter)
 {
-	struct hal_ops	*pHalFunc = &padapter->HalFunc;
+	struct hal_ops	*pHalFunc = &padapter->hal_func;
 
 
 	pHalFunc->hal_power_on = _InitPowerOn_8812AU;
@@ -2650,9 +2666,9 @@ void rtl8812au_set_hal_ops(_adapter *padapter)
 	pHalFunc->intf_chip_configure = &rtl8812au_interface_configure;
 	pHalFunc->read_adapter_info = &ReadAdapterInfo8812AU;
 
-	pHalFunc->SetHwRegHandler = &SetHwReg8812AU;
+	pHalFunc->set_hw_reg_handler = &SetHwReg8812AU;
 	pHalFunc->GetHwRegHandler = &GetHwReg8812AU;
-	pHalFunc->GetHalDefVarHandler = &GetHalDefVar8812AUsb;
+	pHalFunc->get_hal_def_var_handler = &GetHalDefVar8812AUsb;
 	pHalFunc->SetHalDefVarHandler = &SetHalDefVar8812AUsb;
 
 	pHalFunc->hal_xmit = &rtl8812au_hal_xmit;

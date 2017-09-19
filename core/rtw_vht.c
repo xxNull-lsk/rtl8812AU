@@ -20,6 +20,7 @@
 #define _RTW_VHT_C
 
 #include <drv_types.h>
+#include <hal_data.h>
 
 #ifdef CONFIG_80211AC_VHT
 /*				20/40/80,	ShortGI,	MCS Rate  */
@@ -101,7 +102,7 @@ u8	rtw_vht_mcsmap_to_nss(u8 *pvht_mcs_map)
 	return nss;
 }
 
-void	rtw_vht_nss_to_mcsmap(u8 nss, u8 *target_mcs_map, u8 *cur_mcs_map)
+void rtw_vht_nss_to_mcsmap(u8 nss, u8 *target_mcs_map, u8 *cur_mcs_map)
 {
 	u8	i, j;
 	u8	cur_rate, target_rate;
@@ -143,6 +144,8 @@ void	rtw_vht_use_default_setting(_adapter *padapter)
 	u8	mu_bfer, mu_bfee;
 #endif /* CONFIG_BEAMFORMING */
 	u8	rf_type = 0;
+	u8 tx_nss, rx_nss;
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
 	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
 	pvhtpriv->sgi_80m = TEST_FLAG(pregistrypriv->short_gi, BIT2) ? _TRUE : _FALSE;
@@ -224,67 +227,43 @@ void	rtw_vht_use_default_setting(_adapter *padapter)
 	pvhtpriv->ampdu_len = pregistrypriv->ampdu_factor;
 
 	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
+	tx_nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
+	rx_nss = rtw_min(rf_type_to_rf_rx_cnt(rf_type), hal_spec->rx_nss_num);
 
-	if (rf_type == RF_3T3R)
-		pvhtpriv->vht_mcs_map[0] = 0xea;	/* support 1SS MCS 0~9 2SS MCS 0~9 3SS MCS 0~9 */
-	else if (rf_type == RF_2T2R)
-		pvhtpriv->vht_mcs_map[0] = 0xfa;	/* support 1SS MCS 0~9 2SS MCS 0~9 */
-	else
-		pvhtpriv->vht_mcs_map[0] = 0xfe;	/* Only support 1SS MCS 0~9; */
-	pvhtpriv->vht_mcs_map[1] = 0xff;
-
-	if (pregistrypriv->vht_rate_sel == 1) {
-		pvhtpriv->vht_mcs_map[0] = 0xfc;	/* support 1SS MCS 0~7 */
-	} else if (pregistrypriv->vht_rate_sel == 2) {
-		pvhtpriv->vht_mcs_map[0] = 0xfd;	/* Support 1SS MCS 0~8 */
-	} else if (pregistrypriv->vht_rate_sel == 3) {
-		pvhtpriv->vht_mcs_map[0] = 0xfe;	/* Support 1SS MCS 0~9 */
-	} else if (pregistrypriv->vht_rate_sel == 4) {
-		pvhtpriv->vht_mcs_map[0] = 0xf0;	/* support 1SS MCS 0~7 2SS MCS 0~7 */
-	} else if (pregistrypriv->vht_rate_sel == 5) {
-		pvhtpriv->vht_mcs_map[0] = 0xf5;	/* support 1SS MCS 0~8 2SS MCS 0~8 */
-	} else if (pregistrypriv->vht_rate_sel == 6) {
-		pvhtpriv->vht_mcs_map[0] = 0xfa;	/* support 1SS MCS 0~9 2SS MCS 0~9 */
-	} else if (pregistrypriv->vht_rate_sel == 7) {
-		pvhtpriv->vht_mcs_map[0] = 0xf8;	/* support 1SS MCS 0-7 2SS MCS 0~9 */
-	} else if (pregistrypriv->vht_rate_sel == 8) {
-		pvhtpriv->vht_mcs_map[0] = 0xf9;	/* support 1SS MCS 0-8 2SS MCS 0~9 */
-	} else if (pregistrypriv->vht_rate_sel == 9) {
-		pvhtpriv->vht_mcs_map[0] = 0xf4;	/* support 1SS MCS 0-7 2SS MCS 0~8 */
-	}
-
+	/* for now, vhtpriv.vht_mcs_map comes from RX NSS */
+	rtw_vht_nss_to_mcsmap(rx_nss, pvhtpriv->vht_mcs_map, pregistrypriv->vht_rx_mcs_map);
 	pvhtpriv->vht_highest_rate = rtw_get_vht_highest_rate(pvhtpriv->vht_mcs_map);
 }
 
-u64	rtw_vht_rate_to_bitmap(u8 *pVHTRate)
+u64	rtw_vht_mcs_map_to_bitmap(u8 *mcs_map, u8 nss)
 {
+	u8 i, j, tmp;
+	u64 bitmap = 0;
+	u8 bits_nss = nss * 2;
 
-	u8	i, j , tmpRate;
-	u64	RateBitmap = 0;
-	u8 Bits_3ss = 6;
-
-	for (i = j = 0; i < Bits_3ss; i += 2, j += 10) {
+	for (i = j = 0; i < bits_nss; i += 2, j += 10) {
 		/* every two bits means single sptial stream */
-		tmpRate = (pVHTRate[0] >> i) & 3;
+		tmp = (mcs_map[i / 8] >> i) & 3;
 
-		switch (tmpRate) {
+		switch (tmp) {
 		case 2:
-			RateBitmap = RateBitmap | (0x03ff << j);
+			bitmap = bitmap | (0x03ff << j);
 			break;
 		case 1:
-			RateBitmap = RateBitmap | (0x01ff << j);
+			bitmap = bitmap | (0x01ff << j);
 			break;
-
 		case 0:
-			RateBitmap = RateBitmap | (0x00ff << j);
+			bitmap = bitmap | (0x00ff << j);
 			break;
-
 		default:
 			break;
 		}
 	}
-	RTW_INFO("RateBitmap=%016llx , pVHTRate[0]=%02x, pVHTRate[1]=%02x\n", RateBitmap, pVHTRate[0], pVHTRate[1]);
-	return RateBitmap;
+
+	RTW_INFO("vht_mcs_map=%02x %02x, nss=%u => bitmap=%016llx\n"
+		, mcs_map[0], mcs_map[1], nss, bitmap);
+
+	return bitmap;
 }
 
 void	update_sta_vht_info_apmode(_adapter *padapter, PVOID sta)
@@ -362,9 +341,7 @@ void	update_sta_vht_info_apmode(_adapter *padapter, PVOID sta)
 
 	pcap_mcs = GET_VHT_CAPABILITY_ELE_RX_MCS(pvhtpriv_sta->vht_cap);
 	_rtw_memcpy(pvhtpriv_sta->vht_mcs_map, pcap_mcs, 2);
-
 	pvhtpriv_sta->vht_highest_rate = rtw_get_vht_highest_rate(pvhtpriv_sta->vht_mcs_map);
-
 }
 
 void	update_hw_vht_param(_adapter *padapter)
@@ -383,14 +360,14 @@ void	update_hw_vht_param(_adapter *padapter)
 
 void VHT_caps_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pIE)
 {
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
 	struct mlme_priv		*pmlmepriv = &padapter->mlmepriv;
 	struct vht_priv		*pvhtpriv = &pmlmepriv->vhtpriv;
 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
-	u8	cur_ldpc_cap = 0, cur_stbc_cap = 0, rf_type = RF_1T1R;
+	u8	cur_ldpc_cap = 0, cur_stbc_cap = 0, rf_type = RF_1T1R, tx_nss = 0;
 	u16	cur_beamform_cap = 0;
 	u8	*pcap_mcs;
-	u8	vht_mcs[2];
 
 	if (pIE == NULL)
 		return;
@@ -489,18 +466,9 @@ void VHT_caps_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pIE)
 	pvhtpriv->ampdu_len = GET_VHT_CAPABILITY_ELE_MAX_RXAMPDU_FACTOR(pIE->data);
 
 	pcap_mcs = GET_VHT_CAPABILITY_ELE_RX_MCS(pIE->data);
-	_rtw_memcpy(vht_mcs, pcap_mcs, 2);
-
 	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
-	if ((rf_type == RF_1T1R) || (rf_type == RF_1T2R))
-		vht_mcs[0] |= 0xfc;
-	else if (rf_type == RF_2T2R)
-		vht_mcs[0] |= 0xf0;
-	else if (rf_type == RF_3T3R)
-		vht_mcs[0] |= 0xc0;
-
-	_rtw_memcpy(pvhtpriv->vht_mcs_map, vht_mcs, 2);
-
+	tx_nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
+	rtw_vht_nss_to_mcsmap(tx_nss, pvhtpriv->vht_mcs_map, pcap_mcs);
 	pvhtpriv->vht_highest_rate = rtw_get_vht_highest_rate(pvhtpriv->vht_mcs_map);
 }
 
@@ -526,7 +494,6 @@ void rtw_process_vht_op_mode_notify(_adapter *padapter, u8 *pframe, PVOID sta)
 	u8	target_bw;
 	u8	target_rxss, current_rxss;
 	u8	update_ra = _FALSE;
-	u8	vht_mcs_map[2] = {};
 
 	if (pvhtpriv->vht_option == _FALSE)
 		return;
@@ -545,6 +512,8 @@ void rtw_process_vht_op_mode_notify(_adapter *padapter, u8 *pframe, PVOID sta)
 
 	current_rxss = rtw_vht_mcsmap_to_nss(psta->vhtpriv.vht_mcs_map);
 	if (target_rxss != current_rxss) {
+		u8	vht_mcs_map[2] = {};
+
 		update_ra = _TRUE;
 
 		rtw_vht_nss_to_mcsmap(target_rxss, vht_mcs_map, psta->vhtpriv.vht_mcs_map);
@@ -563,11 +532,9 @@ u32	rtw_build_vht_operation_ie(_adapter *padapter, u8 *pbuf, u8 channel)
 	struct mlme_priv		*pmlmepriv = &padapter->mlmepriv;
 	struct vht_priv		*pvhtpriv = &pmlmepriv->vhtpriv;
 	/* struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv; */
-	u8	ChnlWidth, center_freq, bw_mode, rf_type = 0;
+	u8	ChnlWidth, center_freq, bw_mode;
 	u32	len = 0;
 	u8	operation[5];
-
-	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
 
 	_rtw_memset(operation, 0, 5);
 
@@ -589,34 +556,7 @@ u32	rtw_build_vht_operation_ie(_adapter *padapter, u8 *pbuf, u8 channel)
 	SET_VHT_OPERATION_ELE_CHL_CENTER_FREQ1(operation, center_freq);/* Todo: need to set correct center channel */
 	SET_VHT_OPERATION_ELE_CHL_CENTER_FREQ2(operation, 0);
 
-	if (padapter->registrypriv.rf_config != RF_MAX_TYPE)
-		rf_type = padapter->registrypriv.rf_config;
-
-	switch (rf_type) {
-	case RF_1T1R:
-		operation[3] = 0xfe;
-		operation[4] = 0xff;
-		break;
-	case RF_1T2R:
-	case RF_2T2R:
-	case RF_2T2R_GREEN:
-		operation[3] = 0xfa;
-		operation[4] = 0xff;
-		break;
-	case RF_2T3R:
-	case RF_2T4R:
-	case RF_3T3R:
-	case RF_3T4R:
-		operation[3] = 0xea;
-		operation[4] = 0xff;
-		break;
-	case RF_4T4R:
-		operation[3] = 0xaa;
-		operation[4] = 0xff;
-		break;
-	default:
-		RTW_INFO("%s, %d, unknown rf type\n", __func__, __LINE__);
-	}
+	_rtw_memcpy(operation + 3, pvhtpriv->vht_mcs_map, 2);
 
 	rtw_set_ie(pbuf, EID_VHTOperation, 5, operation, &len);
 
@@ -629,18 +569,11 @@ u32	rtw_build_vht_op_mode_notify_ie(_adapter *padapter, u8 *pbuf, u8 bw)
 	struct mlme_priv	*pmlmepriv = &padapter->mlmepriv;
 	struct vht_priv	*pvhtpriv = &pmlmepriv->vhtpriv;
 	u32	len = 0;
-	u8	opmode = 0, rf_type = 0;
+	u8	opmode = 0;
 	u8	chnl_width, rx_nss;
 
 	chnl_width = bw;
-
-	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
-	if (rf_type == RF_3T3R)
-		rx_nss = 3;
-	else if (rf_type == RF_2T2R)
-		rx_nss = 2;
-	else
-		rx_nss = 1;
+	rx_nss = rtw_vht_mcsmap_to_nss(pvhtpriv->vht_mcs_map);
 
 	SET_VHT_OPERATING_MODE_FIELD_CHNL_WIDTH(&opmode, chnl_width);
 	SET_VHT_OPERATING_MODE_FIELD_RX_NSS(&opmode, (rx_nss - 1));

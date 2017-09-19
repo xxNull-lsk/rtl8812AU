@@ -67,6 +67,7 @@ extern void rtl871x_cedbg(const char *fmt, ...);
 
 #define RTW_INFO_DUMP(_TitleString, _HexData, _HexDataLen) do {} while (0)
 #define RTW_DBG_DUMP(_TitleString, _HexData, _HexDataLen) do {} while (0)
+#define RTW_PRINT_DUMP(_TitleString, _HexData, _HexDataLen) do {} while (0)
 #define _RTW_INFO_DUMP(_TitleString, _HexData, _HexDataLen) do {} while (0)
 #define _RTW_DBG_DUMP(_TitleString, _HexData, _HexDataLen) do {} while (0)
 
@@ -182,6 +183,22 @@ extern uint rtw_drv_log_level;
 	} while (0)
 
 
+#undef RTW_PRINT_DUMP
+#define RTW_PRINT_DUMP(_TitleString, _HexData, _HexDataLen)			\
+	do {\
+		if (_DRV_ALWAYS_ <= rtw_drv_log_level) { \
+			int __i;								\
+			u8	*ptr = (u8 *)_HexData;				\
+			_dbgdump("%s", DRIVER_PREFIX);						\
+			_dbgdump(_TitleString); 					\
+			for (__i = 0; __i < (int)_HexDataLen; __i++) {				\
+				_dbgdump("%02X%s", ptr[__i], (((__i + 1) % 4) == 0) ? "  " : " ");	\
+				if (((__i + 1) % 16) == 0)	\
+					_dbgdump("\n"); 		\
+			}								\
+			_dbgdump("\n"); 						\
+		} \
+	} while (0)
 
 /* without driver-defined prefix */
 #undef _RTW_PRINT
@@ -285,6 +302,32 @@ extern uint rtw_drv_log_level;
 		} \
 	} while (0)
 
+/* dump message to selected 'stream' */
+#undef _RTW_DUMP_SEL
+#define _RTW_DUMP_SEL(sel, _HexData, _HexDataLen) \
+	do {\
+		if (sel == RTW_DBGDUMP) {\
+			int __i;								\
+			u8	*ptr = (u8 *)_HexData;				\
+			for (__i = 0; __i < (int)_HexDataLen; __i++) {				\
+				_dbgdump("%02X%s", ptr[__i], (((__i + 1) % 4) == 0) ? "  " : " ");	\
+				if (((__i + 1) % 16) == 0)	\
+					_dbgdump("\n");			\
+			}								\
+			_dbgdump("\n");							\
+		} \
+		else {\
+			int __i;								\
+			u8	*ptr = (u8 *)_HexData;				\
+			for (__i = 0; __i < (int)_HexDataLen; __i++) {				\
+				_seqdump(sel, "%02X%s", ptr[__i], (((__i + 1) % 4) == 0) ? "  " : " ");	\
+				if (((__i + 1) % 16) == 0)	\
+					_seqdump(sel, "\n");			\
+			}								\
+			_seqdump(sel, "\n");							\
+		} \
+	} while (0)
+
 #endif /* defined(_seqdump) */
 
 
@@ -305,13 +348,9 @@ void sdio_local_reg_dump(void *sel, _adapter *adapter);
 
 void mac_reg_dump(void *sel, _adapter *adapter);
 void bb_reg_dump(void *sel, _adapter *adapter);
+void bb_reg_dump_ex(void *sel, _adapter *adapter);
 void rf_reg_dump(void *sel, _adapter *adapter);
 
-bool rtw_fwdl_test_trigger_chksum_fail(void);
-bool rtw_fwdl_test_trigger_wintint_rdy_fail(void);
-bool rtw_del_rx_ampdu_test_trigger_no_tx_fail(void);
-
-u32 rtw_get_wait_hiq_empty_ms(void);
 void rtw_sink_rtp_seq_dbg(_adapter *adapter, _pkt *pkt);
 
 struct sta_info;
@@ -320,7 +359,6 @@ void sta_rx_reorder_ctl_dump(void *sel, struct sta_info *sta);
 struct dvobj_priv;
 void dump_tx_rate_bmp(void *sel, struct dvobj_priv *dvobj);
 void dump_adapters_status(void *sel, struct dvobj_priv *dvobj);
-void dump_adapters_info(void *sel, struct dvobj_priv *dvobj);
 
 struct sec_cam_ent;
 void dump_sec_cam_ent(void *sel, struct sec_cam_ent *ent, int id);
@@ -343,6 +381,10 @@ int proc_get_roam_param(struct seq_file *m, void *v);
 ssize_t proc_set_roam_param(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 ssize_t proc_set_roam_tgt_addr(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 #endif /* CONFIG_LAYER2_ROAMING */
+#ifdef CONFIG_RTW_80211R
+int proc_get_ft_flags(struct seq_file *m, void *v);
+ssize_t proc_set_ft_flags(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+#endif
 int proc_get_qos_option(struct seq_file *m, void *v);
 int proc_get_ht_option(struct seq_file *m, void *v);
 int proc_get_rf_info(struct seq_file *m, void *v);
@@ -360,6 +402,8 @@ ssize_t proc_set_survey_info(struct file *file, const char __user *buffer, size_
 int proc_get_ap_info(struct seq_file *m, void *v);
 ssize_t proc_reset_trx_info(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 int proc_get_trx_info(struct seq_file *m, void *v);
+ssize_t proc_set_tx_power_offset(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+int proc_get_tx_power_offset(struct seq_file *m, void *v);
 int proc_get_rate_ctl(struct seq_file *m, void *v);
 int proc_get_wifi_spec(struct seq_file *m, void *v);
 ssize_t proc_set_rate_ctl(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
@@ -372,16 +416,27 @@ ssize_t proc_set_rx_cnt_dump(struct file *file, const char __user *buffer, size_
 int proc_get_dis_pwt(struct seq_file *m, void *v);
 ssize_t proc_set_dis_pwt(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 
-int proc_get_suspend_resume_info(struct seq_file *m, void *v);
+int proc_get_ps_dbg_info(struct seq_file *m, void *v);
+ssize_t proc_set_ps_dbg_info(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 
+bool rtw_fwdl_test_trigger_chksum_fail(void);
+bool rtw_fwdl_test_trigger_wintint_rdy_fail(void);
 ssize_t proc_set_fwdl_test_case(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+bool rtw_del_rx_ampdu_test_trigger_no_tx_fail(void);
 ssize_t proc_set_del_rx_ampdu_test_case(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 #ifdef CONFIG_DFS_MASTER
 int proc_get_dfs_master_test_case(struct seq_file *m, void *v);
 ssize_t proc_set_dfs_master_test_case(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 #endif /* CONFIG_DFS_MASTER */
+u32 rtw_get_wait_hiq_empty_ms(void);
 ssize_t proc_set_wait_hiq_empty(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+void rtw_sta_linking_test_set_start(void);
+bool rtw_sta_linking_test_wait_done(void);
+bool rtw_sta_linking_test_force_fail(void);
+ssize_t proc_set_sta_linking_test(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 
+int proc_get_rx_stat(struct seq_file *m, void *v);
+int proc_get_tx_stat(struct seq_file *m, void *v);
 #ifdef CONFIG_AP_MODE
 int proc_get_all_sta_info(struct seq_file *m, void *v);
 #endif /* CONFIG_AP_MODE */
@@ -414,6 +469,7 @@ ssize_t proc_set_ampdu_enable(struct file *file, const char __user *buffer, size
 
 int proc_get_mac_rptbuf(struct seq_file *m, void *v);
 
+void dump_regsty_rx_ampdu_size_limit(void *sel, _adapter *adapter);
 int proc_get_rx_ampdu(struct seq_file *m, void *v);
 ssize_t proc_set_rx_ampdu(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 
@@ -439,6 +495,13 @@ ssize_t proc_set_rx_ampdu_density(struct file *file, const char __user *buffer, 
 
 int proc_get_tx_ampdu_density(struct seq_file *m, void *v);
 ssize_t proc_set_tx_ampdu_density(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+
+#ifdef CONFIG_TX_AMSDU
+int proc_get_tx_amsdu(struct seq_file *m, void *v);
+ssize_t proc_set_tx_amsdu(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+int proc_get_tx_amsdu_rate(struct seq_file *m, void *v);
+ssize_t proc_set_tx_amsdu_rate(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+#endif
 #endif /* CONFIG_80211N_HT */
 
 int proc_get_en_fwps(struct seq_file *m, void *v);
@@ -454,6 +517,10 @@ ssize_t proc_set_rssi_disp(struct file *file, const char __user *buffer, size_t 
 int proc_get_btcoex_dbg(struct seq_file *m, void *v);
 ssize_t proc_set_btcoex_dbg(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 int proc_get_btcoex_info(struct seq_file *m, void *v);
+#ifdef CONFIG_RF4CE_COEXIST
+int proc_get_rf4ce_state(struct seq_file *m, void *v);
+ssize_t proc_set_rf4ce_state(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+#endif
 #endif /* CONFIG_BT_COEXIST */
 
 #if defined(DBG_CONFIG_ERROR_DETECT)
@@ -473,6 +540,7 @@ int proc_get_int_logs(struct seq_file *m, void *v);
 #ifdef CONFIG_PCI_HCI
 int proc_get_rx_ring(struct seq_file *m, void *v);
 int proc_get_tx_ring(struct seq_file *m, void *v);
+int proc_get_pci_aspm(struct seq_file *m, void *v);
 #endif
 
 #ifdef CONFIG_WOWLAN
@@ -506,6 +574,10 @@ int proc_get_tdls_info(struct seq_file *m, void *v);
 int proc_get_monitor(struct seq_file *m, void *v);
 ssize_t proc_set_monitor(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 
+#ifdef DBG_XMIT_BLOCK
+int proc_get_xmit_block(struct seq_file *m, void *v);
+ssize_t proc_set_xmit_block(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+#endif
 
 #ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
 int proc_get_rtkm_info(struct seq_file *m, void *v);
@@ -535,7 +607,12 @@ ssize_t proc_set_mcc_ap_bw80_target_tp(struct file *file, const char __user *buf
 ssize_t proc_set_mcc_sta_bw20_target_tp(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 ssize_t proc_set_mcc_sta_bw40_target_tp(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 ssize_t proc_set_mcc_sta_bw80_target_tp(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
+int proc_get_mcc_policy_table(struct seq_file *m, void *v);
+ssize_t proc_set_mcc_policy_table(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 #endif /* CONFIG_MCC_MODE */
+
+int proc_get_ack_timeout(struct seq_file *m, void *v);
+ssize_t proc_set_ack_timeout(struct file *file, const char __user *buffer, size_t count, loff_t *pos, void *data);
 
 
 #define _drv_always_		1

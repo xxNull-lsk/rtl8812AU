@@ -126,7 +126,7 @@ void rtl8192e_set_raid_cmd(PADAPTER padapter, u32 bitmap, u8 *arg, u8 bw);
 s32 FillH2CCmd_8192E(PADAPTER padapter, u8 ElementID, u32 CmdLen, u8 *pCmdBuffer);
 u8 GetTxBufferRsvdPageNum8192E(_adapter *padapter, bool wowlan);
 /* u8 rtl8192c_set_FwSelectSuspend_cmd(PADAPTER padapter, u8 bfwpoll, u16 period); */
-s32 c2h_handler_8192e(PADAPTER padapter, u8 *buf);
+s32 c2h_handler_8192e(_adapter *adapter, u8 id, u8 seq, u8 plen, u8 *payload);
 #ifdef CONFIG_BT_COEXIST
 	void rtl8192e_download_BTCoex_AP_mode_rsvd_page(PADAPTER padapter);
 #endif /* CONFIG_BT_COEXIST */
@@ -157,20 +157,5 @@ void CheckFwRsvdPageContent(PADAPTER padapter);
 #define	GET_8192E_C2H_TX_RPT_DATA_RETRY_CNT(_Header)		LE_BITS_TO_1BYTE((_Header + 2), 0, 6)
 #define	GET_8192E_C2H_TX_RPT_QUEUE_TIME(_Header)				LE_BITS_TO_2BYTE((_Header + 3), 0, 16)	/* In unit of 256 microseconds. */
 #define	GET_8192E_C2H_TX_RPT_FINAL_DATA_RATE(_Header)		LE_BITS_TO_1BYTE((_Header + 5), 0, 8)
-
-
-
-void C2HContentParsing8192E(
-	IN	PADAPTER		Adapter,
-	IN	u1Byte			c2hCmdId,
-	IN	u1Byte			c2hCmdLen,
-	IN	pu1Byte			tmpBuf
-);
-VOID
-C2HPacketHandler_8192E(
-	IN	PADAPTER		Adapter,
-	IN	pu1Byte			Buffer,
-	IN	u1Byte			Length
-);
 
 #endif /* __RTL8192E_CMD_H__ */

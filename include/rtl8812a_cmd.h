@@ -103,16 +103,15 @@ struct H2C_SS_RFOFF_PARAM {
 #define SET_8812_H2CCMD_P2P_PS_OFFLOAD_DISCOVERY(__pH2CCmd, __Value)			SET_BITS_TO_LE_1BYTE(__pH2CCmd, 6, 1, __Value)
 
 
-void	Set_RA_LDPC_8812(struct sta_info	*psta, BOOLEAN bLDPC);
+void	set_ra_ldpc_8812(struct sta_info	*psta, BOOLEAN bLDPC);
 
 /* host message to firmware cmd */
-s32 FillH2CCmd_8812(PADAPTER padapter, u8 ElementID, u32 CmdLen, u8 *pCmdBuffer);
+s32 fill_h2c_cmd_8812(PADAPTER padapter, u8 ElementID, u32 CmdLen, u8 *pCmdBuffer);
 void rtl8812_set_FwPwrMode_cmd(PADAPTER padapter, u8 PSMode);
 void rtl8812_set_FwJoinBssReport_cmd(PADAPTER padapter, u8 mstatus);
 u8 rtl8812_set_rssi_cmd(PADAPTER padapter, u8 *param);
 void rtl8812_set_raid_cmd(PADAPTER padapter, u32 bitmap, u8 *arg, u8 bw);
 void rtl8812_set_wowlan_cmd(_adapter *padapter, u8 enable);
-s32 FillH2CCmd_8812(PADAPTER padapter, u8 ElementID, u32 CmdLen, u8 *pCmdBuffer);
 u8 GetTxBufferRsvdPageNum8812(_adapter *padapter, bool wowlan);
 
 #ifdef CONFIG_BT_COEXIST
@@ -167,16 +166,6 @@ int reset_tsf(PADAPTER Adapter, u8 reset_port);
 #define SET_8812_H2CCMD_BT_FW_PATCH_ADDR2(__pH2CCmd, __Value)					SET_BITS_TO_LE_1BYTE((pu1Byte)(__pH2CCmd)+4, 0, 8, __Value)
 #define SET_8812_H2CCMD_BT_FW_PATCH_ADDR3(__pH2CCmd, __Value)					SET_BITS_TO_LE_1BYTE((pu1Byte)(__pH2CCmd)+5, 0, 8, __Value)
 
-int	rtl8812_iqk_wait(_adapter *padapter, u32 timeout_ms);
-void	rtl8812_iqk_done(_adapter *padapter);
-
-s32
-_C2HContentParsing8812(
-	IN	PADAPTER	Adapter,
-	IN	u8			c2hCmdId,
-	IN	u8			c2hCmdLen,
-	IN	u8			*tmpBuf
-);
-void	C2HPacketHandler_8812(PADAPTER Adapter, u8 *Buffer, u8 Length);
+s32 c2h_handler_8812a(_adapter *adapter, u8 id, u8 seq, u8 plen, u8 *payload);
 
 #endif/* __RTL8812A_CMD_H__ */

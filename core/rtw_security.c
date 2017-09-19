@@ -1376,7 +1376,7 @@ static sint aes_cipher(u8 *key, uint	hdrlen,
 	u8 mic[8];
 	/*	uint	offset = 0; */
 	uint	frtype  = GetFrameType(pframe);
-	uint	frsubtype  = GetFrameSubType(pframe);
+	uint	frsubtype  = get_frame_sub_type(pframe);
 
 	frsubtype = frsubtype >> 4;
 
@@ -1685,7 +1685,7 @@ static sint aes_decipher(u8 *key, uint	hdrlen,
 
 	/*	uint	offset = 0; */
 	uint	frtype  = GetFrameType(pframe);
-	uint	frsubtype  = GetFrameSubType(pframe);
+	uint	frsubtype  = get_frame_sub_type(pframe);
 	frsubtype = frsubtype >> 4;
 
 
@@ -3070,25 +3070,6 @@ int tdls_verify_mic(u8 *kck, u8 trans_seq,
 
 }
 #endif /* CONFIG_TDLS */
-
-void rtw_use_tkipkey_handler(RTW_TIMER_HDL_ARGS)
-{
-	_adapter *padapter = (_adapter *)FunctionContext;
-
-
-
-	/*
-		if (RTW_CANNOT_RUN(padapter)) {
-
-			return;
-		}
-		*/
-
-	padapter->securitypriv.busetkipkey = _TRUE;
-
-
-
-}
 
 /* Restore HW wep key setting according to key_mask */
 void rtw_sec_restore_wep_key(_adapter *adapter)

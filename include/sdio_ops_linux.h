@@ -40,15 +40,17 @@ void _sd_write32(struct intf_hdl *pintfhdl, u32 addr, u32 v, s32 *err);
 void sd_write32(struct intf_hdl *pintfhdl, u32 addr, u32 v, s32 *err);
 #endif /* RTW_HALMAC */
 
+bool rtw_is_sdio30(_adapter *adapter);
+inline u32 rtw_sdio_get_clock(struct dvobj_priv *d);
+
 s32 _sd_read(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, void *pdata);
 s32 sd_read(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, void *pdata);
 s32 _sd_write(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, void *pdata);
 s32 sd_write(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, void *pdata);
 
 void rtw_sdio_set_irq_thd(struct dvobj_priv *dvobj, _thread_hdl_ thd_hdl);
-int __must_check rtw_sdio_raw_read(struct dvobj_priv *d, int addr,
+int __must_check rtw_sdio_raw_read(struct dvobj_priv *d, unsigned int addr,
 				void *buf, size_t len, bool fixed);
-int __must_check rtw_sdio_raw_write(struct dvobj_priv *d, int addr,
+int __must_check rtw_sdio_raw_write(struct dvobj_priv *d, unsigned int addr,
 				void *buf, size_t len, bool fixed);
-
 #endif

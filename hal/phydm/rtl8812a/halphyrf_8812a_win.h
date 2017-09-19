@@ -22,85 +22,84 @@
 #define __HAL_PHY_RF_8812A_H__
 
 /*--------------------------Define Parameters-------------------------------*/
-#define	IQK_DELAY_TIME_8812A		10		//ms
-#define	IQK_DEFERRED_TIME_8812A		4		//sec
+#define	IQK_DELAY_TIME_8812A		10		/* ms */
+#define	IQK_DEFERRED_TIME_8812A		4		/* sec */
 #define	index_mapping_NUM_8812A	15
 #define AVG_THERMAL_NUM_8812A	4
-#define RF_T_METER_8812A 		0x42
+#define RF_T_METER_8812A		0x42
 
 
-void ConfigureTxpowerTrack_8812A(
-	PTXPWRTRACK_CFG	pConfig
-	);
+void configure_txpower_track_8812a(
+	struct _TXPWRTRACK_CFG	*p_config
+);
 
-VOID
-GetDeltaSwingTable_8812A(
-	IN	PVOID		pDM_VOID,
-	OUT pu1Byte 			*TemperatureUP_A,
-	OUT pu1Byte 			*TemperatureDOWN_A,
-	OUT pu1Byte 			*TemperatureUP_B,
-	OUT pu1Byte 			*TemperatureDOWN_B	
-	);
+void
+get_delta_swing_table_8812a(
+	void		*p_dm_void,
+	u8 **temperature_up_a,
+	u8 **temperature_down_a,
+	u8 **temperature_up_b,
+	u8 **temperature_down_b
+);
 
-void DoIQK_8812A(
-	PVOID		pDM_VOID,
-	u1Byte 		DeltaThermalIndex,
-	u1Byte		ThermalValue,	
-	u1Byte 		Threshold
-	);
+void do_iqk_8812a(
+	void		*p_dm_void,
+	u8		delta_thermal_index,
+	u8		thermal_value,
+	u8		threshold
+);
 
-VOID
-ODM_TxPwrTrackSetPwr8812A(
-	PVOID		pDM_VOID,
-	PWRTRACK_METHOD 	Method,
-	u1Byte 				RFPath,
-	u1Byte 				ChannelMappedIndex
-	);
+void
+odm_tx_pwr_track_set_pwr8812a(
+	void		*p_dm_void,
+	enum pwrtrack_method	method,
+	u8				rf_path,
+	u8				channel_mapped_index
+);
 
-//1 7.	IQK
+/* 1 7.	IQK */
 
-void	
-PHY_IQCalibrate_8812A(	
-	IN	PADAPTER	pAdapter,	
-	IN	BOOLEAN 	bReCovery
+void
+phy_iq_calibrate_8812a(
+	struct _ADAPTER	*p_adapter,
+	boolean	is_recovery
 );
 
 
-//
-// LC calibrate
-//
-void	
-PHY_LCCalibrate_8812A(
-	IN PVOID		pDM_VOID
+/*
+ * LC calibrate
+ *   */
+void
+phy_lc_calibrate_8812a(
+	void		*p_dm_void
 );
 
-//
-// AP calibrate
-//
-void	
-PHY_APCalibrate_8812A(		
+/*
+ * AP calibrate
+ *   */
+void
+phy_ap_calibrate_8812a(
 #if (DM_ODM_SUPPORT_TYPE & ODM_AP)
-	IN PDM_ODM_T		pDM_Odm,
+	struct PHY_DM_STRUCT		*p_dm_odm,
 #else
-	IN	PADAPTER	pAdapter,
+	struct _ADAPTER	*p_adapter,
 #endif
-							IN 	s1Byte		delta);
-void	
-PHY_DigitalPredistortion_8812A(		IN	PADAPTER	pAdapter);
+	s8		delta);
+void
+phy_digital_predistortion_8812a(struct _ADAPTER	*p_adapter);
 
-VOID	                                                 
-PHY_DPCalibrate_8812A(                                   
-	IN 	PDM_ODM_T	pDM_Odm                          
-);           
-VOID PHY_SetRFPathSwitch_8812A(
+void
+phy_dp_calibrate_8812a(
+	struct PHY_DM_STRUCT	*p_dm_odm
+);
+void phy_set_rf_path_switch_8812a(
 #if (DM_ODM_SUPPORT_TYPE & ODM_AP)
-	IN PDM_ODM_T		pDM_Odm,
+	struct PHY_DM_STRUCT		*p_dm_odm,
 #else
-	IN	PADAPTER	pAdapter,
+	struct _ADAPTER	*p_adapter,
 #endif
-	IN	BOOLEAN		bMain
-	);
+	boolean		is_main
+);
 
-								
-#endif	// #ifndef __HAL_PHY_RF_8812A_H__								
 
+#endif	/*  #ifndef __HAL_PHY_RF_8812A_H__ */

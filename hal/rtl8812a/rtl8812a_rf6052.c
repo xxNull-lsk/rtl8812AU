@@ -47,20 +47,20 @@ PHY_RF6052SetBandwidth8812(
 	switch (Bandwidth) {
 	case CHANNEL_WIDTH_20:
 		/* RTW_INFO("PHY_RF6052SetBandwidth8812(), set 20MHz\n"); */
-		PHY_SetRFReg(Adapter, RF_PATH_A, RF_CHNLBW_Jaguar, BIT11 | BIT10, 3);
-		PHY_SetRFReg(Adapter, RF_PATH_B, RF_CHNLBW_Jaguar, BIT11 | BIT10, 3);
+		phy_set_rf_reg(Adapter, RF_PATH_A, RF_CHNLBW_Jaguar, BIT11 | BIT10, 3);
+		phy_set_rf_reg(Adapter, RF_PATH_B, RF_CHNLBW_Jaguar, BIT11 | BIT10, 3);
 		break;
 
 	case CHANNEL_WIDTH_40:
 		/* RTW_INFO("PHY_RF6052SetBandwidth8812(), set 40MHz\n"); */
-		PHY_SetRFReg(Adapter, RF_PATH_A, RF_CHNLBW_Jaguar, BIT11 | BIT10, 1);
-		PHY_SetRFReg(Adapter, RF_PATH_B, RF_CHNLBW_Jaguar, BIT11 | BIT10, 1);
+		phy_set_rf_reg(Adapter, RF_PATH_A, RF_CHNLBW_Jaguar, BIT11 | BIT10, 1);
+		phy_set_rf_reg(Adapter, RF_PATH_B, RF_CHNLBW_Jaguar, BIT11 | BIT10, 1);
 		break;
 
 	case CHANNEL_WIDTH_80:
 		/* RTW_INFO("PHY_RF6052SetBandwidth8812(), set 80MHz\n"); */
-		PHY_SetRFReg(Adapter, RF_PATH_A, RF_CHNLBW_Jaguar, BIT11 | BIT10, 0);
-		PHY_SetRFReg(Adapter, RF_PATH_B, RF_CHNLBW_Jaguar, BIT11 | BIT10, 0);
+		phy_set_rf_reg(Adapter, RF_PATH_A, RF_CHNLBW_Jaguar, BIT11 | BIT10, 0);
+		phy_set_rf_reg(Adapter, RF_PATH_B, RF_CHNLBW_Jaguar, BIT11 | BIT10, 0);
 		break;
 
 	default:
@@ -91,7 +91,7 @@ phy_RF6052_Config_ParaFile_8812(
 #endif
 			{
 #ifdef CONFIG_EMBEDDED_FWIMG
-				if (HAL_STATUS_FAILURE == ODM_ConfigRFWithHeaderFile(&pHalData->odmpriv, CONFIG_RF_RADIO, (ODM_RF_RADIO_PATH_E)eRFPath))
+				if (HAL_STATUS_FAILURE == odm_config_rf_with_header_file(&pHalData->odmpriv, CONFIG_RF_RADIO, (enum odm_rf_radio_path_e)eRFPath))
 					rtStatus = _FAIL;
 #endif
 			}
@@ -102,7 +102,7 @@ phy_RF6052_Config_ParaFile_8812(
 #endif
 			{
 #ifdef CONFIG_EMBEDDED_FWIMG
-				if (HAL_STATUS_FAILURE == ODM_ConfigRFWithHeaderFile(&pHalData->odmpriv, CONFIG_RF_RADIO, (ODM_RF_RADIO_PATH_E)eRFPath))
+				if (HAL_STATUS_FAILURE == odm_config_rf_with_header_file(&pHalData->odmpriv, CONFIG_RF_RADIO, (enum odm_rf_radio_path_e)eRFPath))
 					rtStatus = _FAIL;
 #endif
 			}
@@ -127,7 +127,7 @@ phy_RF6052_Config_ParaFile_8812(
 #endif
 	{
 #ifdef CONFIG_EMBEDDED_FWIMG
-		ODM_ConfigRFWithTxPwrTrackHeaderFile(&pHalData->odmpriv);
+		odm_config_rf_with_tx_pwr_track_header_file(&pHalData->odmpriv);
 #endif
 	}
 

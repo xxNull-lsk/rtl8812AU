@@ -1,7 +1,7 @@
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
- *                                        
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
  * published by the Free Software Foundation.
@@ -18,104 +18,94 @@
  *
  ******************************************************************************/
 
-//============================================================
-// include files
-//============================================================
+/* ************************************************************
+ * include files
+ * ************************************************************ */
 #include "mp_precomp.h"
 #include "phydm_precomp.h"
 
-VOID 
-odm_DynamicBBPowerSavingInit(
-	IN		PVOID					pDM_VOID
-	)
-{
-	PDM_ODM_T		pDM_Odm = (PDM_ODM_T)pDM_VOID;
-	pPS_T	pDM_PSTable = &pDM_Odm->DM_PSTable;
+#if (defined(CONFIG_BB_POWER_SAVING))
 
-	pDM_PSTable->PreCCAState = CCA_MAX;
-	pDM_PSTable->CurCCAState = CCA_MAX;
-	pDM_PSTable->PreRFState = RF_MAX;
-	pDM_PSTable->CurRFState = RF_MAX;
-	pDM_PSTable->Rssi_val_min = 0;
-	pDM_PSTable->initialize = 0;
+void
+odm_dynamic_bb_power_saving_init(
+	void					*p_dm_void
+)
+{
+	struct PHY_DM_STRUCT		*p_dm_odm = (struct PHY_DM_STRUCT *)p_dm_void;
+	struct _dynamic_power_saving	*p_dm_ps_table = &p_dm_odm->dm_ps_table;
+
+	p_dm_ps_table->pre_cca_state = CCA_MAX;
+	p_dm_ps_table->cur_cca_state = CCA_MAX;
+	p_dm_ps_table->pre_rf_state = RF_MAX;
+	p_dm_ps_table->cur_rf_state = RF_MAX;
+	p_dm_ps_table->rssi_val_min = 0;
+	p_dm_ps_table->initialize = 0;
 }
 
 void
-ODM_RF_Saving(
-	IN		PVOID					pDM_VOID,
-	IN	u1Byte		bForceInNormal 
-	)
+odm_rf_saving(
+	void					*p_dm_void,
+	u8		is_force_in_normal
+)
 {
-	PDM_ODM_T		pDM_Odm = (PDM_ODM_T)pDM_VOID;
+	struct PHY_DM_STRUCT		*p_dm_odm = (struct PHY_DM_STRUCT *)p_dm_void;
 #if (DM_ODM_SUPPORT_TYPE != ODM_AP)
-	pPS_T	pDM_PSTable = &pDM_Odm->DM_PSTable;
-	u1Byte	Rssi_Up_bound = 30 ;
-	u1Byte	Rssi_Low_bound = 25;
+	struct _dynamic_power_saving	*p_dm_ps_table = &p_dm_odm->dm_ps_table;
+	u8	rssi_up_bound = 30 ;
+	u8	rssi_low_bound = 25;
 #if (DM_ODM_SUPPORT_TYPE == ODM_CE)
-	if(pDM_Odm->PatchID == 40 ) //RT_CID_819x_FUNAI_TV
-	{
-		Rssi_Up_bound = 50 ;
-		Rssi_Low_bound = 45;
+	if (p_dm_odm->patch_id == 40) { /* RT_CID_819x_FUNAI_TV */
+		rssi_up_bound = 50 ;
+		rssi_low_bound = 45;
 	}
 #endif
-	if(pDM_PSTable->initialize == 0){
-		
-		pDM_PSTable->Reg874 = (ODM_GetBBReg(pDM_Odm, 0x874, bMaskDWord)&0x1CC000)>>14;
-		pDM_PSTable->RegC70 = (ODM_GetBBReg(pDM_Odm, 0xc70, bMaskDWord)&BIT3)>>3;
-		pDM_PSTable->Reg85C = (ODM_GetBBReg(pDM_Odm, 0x85c, bMaskDWord)&0xFF000000)>>24;
-		pDM_PSTable->RegA74 = (ODM_GetBBReg(pDM_Odm, 0xa74, bMaskDWord)&0xF000)>>12;
-		//Reg818 = PHY_QueryBBReg(pAdapter, 0x818, bMaskDWord);
-		pDM_PSTable->initialize = 1;
+	if (p_dm_ps_table->initialize == 0) {
+
+		p_dm_ps_table->reg874 = (odm_get_bb_reg(p_dm_odm, 0x874, MASKDWORD) & 0x1CC000) >> 14;
+		p_dm_ps_table->regc70 = (odm_get_bb_reg(p_dm_odm, 0xc70, MASKDWORD) & BIT(3)) >> 3;
+		p_dm_ps_table->reg85c = (odm_get_bb_reg(p_dm_odm, 0x85c, MASKDWORD) & 0xFF000000) >> 24;
+		p_dm_ps_table->rega74 = (odm_get_bb_reg(p_dm_odm, 0xa74, MASKDWORD) & 0xF000) >> 12;
+		/* Reg818 = phy_query_bb_reg(p_adapter, 0x818, MASKDWORD); */
+		p_dm_ps_table->initialize = 1;
 	}
 
-	if(!bForceInNormal)
-	{
-		if(pDM_Odm->RSSI_Min != 0xFF)
-		{			 
-			if(pDM_PSTable->PreRFState == RF_Normal)
-			{
-				if(pDM_Odm->RSSI_Min >= Rssi_Up_bound)
-					pDM_PSTable->CurRFState = RF_Save;
+	if (!is_force_in_normal) {
+		if (p_dm_odm->rssi_min != 0xFF) {
+			if (p_dm_ps_table->pre_rf_state == rf_normal) {
+				if (p_dm_odm->rssi_min >= rssi_up_bound)
+					p_dm_ps_table->cur_rf_state = rf_save;
 				else
-					pDM_PSTable->CurRFState = RF_Normal;
-			}
-			else{
-				if(pDM_Odm->RSSI_Min <= Rssi_Low_bound)
-					pDM_PSTable->CurRFState = RF_Normal;
+					p_dm_ps_table->cur_rf_state = rf_normal;
+			} else {
+				if (p_dm_odm->rssi_min <= rssi_low_bound)
+					p_dm_ps_table->cur_rf_state = rf_normal;
 				else
-					pDM_PSTable->CurRFState = RF_Save;
+					p_dm_ps_table->cur_rf_state = rf_save;
 			}
+		} else
+			p_dm_ps_table->cur_rf_state = RF_MAX;
+	} else
+		p_dm_ps_table->cur_rf_state = rf_normal;
+
+	if (p_dm_ps_table->pre_rf_state != p_dm_ps_table->cur_rf_state) {
+		if (p_dm_ps_table->cur_rf_state == rf_save) {
+			odm_set_bb_reg(p_dm_odm, 0x874, 0x1C0000, 0x2); /* reg874[20:18]=3'b010 */
+			odm_set_bb_reg(p_dm_odm, 0xc70, BIT(3), 0); /* regc70[3]=1'b0 */
+			odm_set_bb_reg(p_dm_odm, 0x85c, 0xFF000000, 0x63); /* reg85c[31:24]=0x63 */
+			odm_set_bb_reg(p_dm_odm, 0x874, 0xC000, 0x2); /* reg874[15:14]=2'b10 */
+			odm_set_bb_reg(p_dm_odm, 0xa74, 0xF000, 0x3); /* RegA75[7:4]=0x3 */
+			odm_set_bb_reg(p_dm_odm, 0x818, BIT(28), 0x0); /* Reg818[28]=1'b0 */
+			odm_set_bb_reg(p_dm_odm, 0x818, BIT(28), 0x1); /* Reg818[28]=1'b1 */
+		} else {
+			odm_set_bb_reg(p_dm_odm, 0x874, 0x1CC000, p_dm_ps_table->reg874);
+			odm_set_bb_reg(p_dm_odm, 0xc70, BIT(3), p_dm_ps_table->regc70);
+			odm_set_bb_reg(p_dm_odm, 0x85c, 0xFF000000, p_dm_ps_table->reg85c);
+			odm_set_bb_reg(p_dm_odm, 0xa74, 0xF000, p_dm_ps_table->rega74);
+			odm_set_bb_reg(p_dm_odm, 0x818, BIT(28), 0x0);
 		}
-		else
-			pDM_PSTable->CurRFState=RF_MAX;
+		p_dm_ps_table->pre_rf_state = p_dm_ps_table->cur_rf_state;
 	}
-	else
-	{
-		pDM_PSTable->CurRFState = RF_Normal;
-	}
-	
-	if(pDM_PSTable->PreRFState != pDM_PSTable->CurRFState)
-	{
-		if(pDM_PSTable->CurRFState == RF_Save)
-		{
-			ODM_SetBBReg(pDM_Odm, 0x874  , 0x1C0000, 0x2); //Reg874[20:18]=3'b010
-			ODM_SetBBReg(pDM_Odm, 0xc70, BIT3, 0); //RegC70[3]=1'b0
-			ODM_SetBBReg(pDM_Odm, 0x85c, 0xFF000000, 0x63); //Reg85C[31:24]=0x63
-			ODM_SetBBReg(pDM_Odm, 0x874, 0xC000, 0x2); //Reg874[15:14]=2'b10
-			ODM_SetBBReg(pDM_Odm, 0xa74, 0xF000, 0x3); //RegA75[7:4]=0x3
-			ODM_SetBBReg(pDM_Odm, 0x818, BIT28, 0x0); //Reg818[28]=1'b0
-			ODM_SetBBReg(pDM_Odm, 0x818, BIT28, 0x1); //Reg818[28]=1'b1
-		}
-		else
-		{
-			ODM_SetBBReg(pDM_Odm, 0x874  , 0x1CC000, pDM_PSTable->Reg874); 
-			ODM_SetBBReg(pDM_Odm, 0xc70, BIT3, pDM_PSTable->RegC70); 
-			ODM_SetBBReg(pDM_Odm, 0x85c, 0xFF000000, pDM_PSTable->Reg85C);
-			ODM_SetBBReg(pDM_Odm, 0xa74, 0xF000, pDM_PSTable->RegA74); 
-			ODM_SetBBReg(pDM_Odm,0x818, BIT28, 0x0);  
-		}
-		pDM_PSTable->PreRFState =pDM_PSTable->CurRFState;
-	}
-#endif	
+#endif
 }
 
+#endif

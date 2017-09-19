@@ -50,6 +50,7 @@ const char *security_type_str(u8 value);
 
 #define RTW_KEK_LEN 16
 #define RTW_KCK_LEN 16
+#define RTW_TKIP_MIC_LEN 8
 #define RTW_REPLAY_CTR_LEN 8
 
 #define INVALID_SEC_MAC_CAM_ID	0xFF
@@ -158,6 +159,8 @@ struct security_priv {
 #ifdef CONFIG_CONCURRENT_MODE
 	u8	dot118021x_bmc_cam_id;
 #endif
+	/*IEEE802.11-2012 Std. Table 8-101 AKM Suite Selectors*/
+	u32	rsn_akm_suite_type;
 
 	u8 wps_ie[MAX_WPS_IE_LEN];/* added in assoc req */
 	int wps_ie_len;
@@ -171,7 +174,6 @@ struct security_priv {
 	u8	binstallBIPkey;
 #endif /* CONFIG_IEEE80211W */
 	u8	busetkipkey;
-	/* _timer tkip_timer; */
 	u8	bcheck_grpkey;
 	u8	bgrpkey_handshake;
 
@@ -477,8 +479,6 @@ int wpa_tdls_teardown_ftie_mic(u8 *kck, u8 *lnkid, u16 reason,
 int tdls_verify_mic(u8 *kck, u8 trans_seq,
 			u8 *lnkid, u8 *rsnie, u8 *timeoutie, u8 *ftie);
 #endif /* CONFIG_TDLS */
-
-void rtw_use_tkipkey_handler(RTW_TIMER_HDL_ARGS);
 
 void rtw_sec_restore_wep_key(_adapter *adapter);
 u8 rtw_handle_tkip_countermeasure(_adapter *adapter, const char *caller);

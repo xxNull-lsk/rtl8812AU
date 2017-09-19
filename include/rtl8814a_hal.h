@@ -148,7 +148,7 @@ typedef struct _RT_FIRMWARE_8814 {
 #endif /* #if defined(CONFIG_SDIO_HCI) || defined(CONFIG_USB_HCI) */
 
 #ifdef CONFIG_WOWLAN
-	#define WOWLAN_PAGE_NUM_8814	0x00
+	#define WOWLAN_PAGE_NUM_8814	0x06
 #else
 	#define WOWLAN_PAGE_NUM_8814	0x00
 #endif
@@ -221,6 +221,16 @@ Chip specific
  * |         |            Reserved(14bytes)	      |
  *   */
 #define	EFUSE_OOB_PROTECT_BYTES		15	/* PG data exclude header, dummy 6 bytes frome CP test and reserved 1byte. */
+
+#ifdef CONFIG_FILE_FWIMG
+extern char *rtw_fw_file_path;
+#ifdef CONFIG_WOWLAN
+extern char *rtw_fw_wow_file_path;
+#endif
+#ifdef CONFIG_MP_INCLUDED
+extern char *rtw_fw_mp_bt_file_path;
+#endif /* CONFIG_MP_INCLUDED */
+#endif /* CONFIG_FILE_FWIMG */
 
 /* rtl8814_hal_init.c */
 s32 FirmwareDownload8814A(PADAPTER	Adapter, BOOLEAN bUsedWoWLANFw);
@@ -301,7 +311,6 @@ void SetHwReg8814A(PADAPTER padapter, u8 variable, u8 *pval);
 void GetHwReg8814A(PADAPTER padapter, u8 variable, u8 *pval);
 u8 SetHalDefVar8814A(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
 u8 GetHalDefVar8814A(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
-s32 c2h_id_filter_ccx_8814a(u8 *buf);
 void rtl8814_set_hal_ops(struct hal_ops *pHalFunc);
 void init_hal_spec_8814a(_adapter *adapter);
 
@@ -315,6 +324,7 @@ void rtl8814_stop_thread(PADAPTER padapter);
 #ifdef CONFIG_PCI_HCI
 	BOOLEAN	InterruptRecognized8814AE(PADAPTER Adapter);
 	VOID	UpdateInterruptMask8814AE(PADAPTER Adapter, u32 AddMSR, u32 AddMSR1, u32 RemoveMSR, u32 RemoveMSR1);
+	VOID	InitMAC_TRXBD_8814AE(PADAPTER Adapter);
 	u16	get_txbd_idx_addr(u16 ff_hwaddr);
 #endif
 

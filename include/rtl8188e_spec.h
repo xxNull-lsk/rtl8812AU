@@ -47,6 +47,15 @@
 #define REG_HISR_88E					0x00B4 /* RTL8188E */
 #define REG_HIMRE_88E					0x00B8 /* RTL8188E */
 #define REG_HISRE_88E					0x00BC /* RTL8188E */
+
+#define	REG_DBI_WDATA_8188E				0x0348	/* DBI Write data */
+#define	REG_DBI_RDATA_8188E				0x034C	/* DBI Read data */
+#define	REG_DBI_ADDR_8188E				0x0350	/* DBI Address */
+#define	REG_DBI_FLAG_8188E				0x0352	/* DBI Read/Write Flag */
+#define	REG_MDIO_WDATA_8188E				0x0354	/* MDIO for Write PCIE PHY */
+#define	REG_MDIO_RDATA_8188E				0x0356	/* MDIO for Reads PCIE PHY */
+#define	REG_MDIO_CTL_8188E				0x0358	/* MDIO for Control */
+
 #define REG_MACID_NO_LINK_0			0x0484
 #define REG_MACID_NO_LINK_1			0x0488
 #define REG_MACID_PAUSE_0			0x048c
@@ -79,6 +88,8 @@
  *	0x0300h ~ 0x03FFh	PCIe
  *
  * ----------------------------------------------------- */
+#define REG_PCIE_HRPWM_8188E		0x0361	/* PCIe RPWM */
+#define REG_PCIE_HCPWM_8188E		0x0363	/* PCIe CPWM */
 
 /* -----------------------------------------------------
  *
@@ -141,19 +152,6 @@
 
 	#define RT_AC_INT_MASKS	(IMR_VIDOK_88E | IMR_VODOK_88E | IMR_BEDOK_88E | IMR_BKDOK_88E)
 #endif
-
-
-/* ********************************************************
- * General definitions
- * ******************************************************** */
-
-#define MACID_NUM_88E 64
-#define SEC_CAM_ENT_NUM_88E 32
-#define HW_PORT_NUM_88E	2
-#define NSS_NUM_88E 1
-#define BAND_CAP_88E (BAND_CAP_2G)
-#define BW_CAP_88E (BW_CAP_20M | BW_CAP_40M)
-#define PROTO_CAP_88E (PROTO_CAP_11B | PROTO_CAP_11G | PROTO_CAP_11N)
 
 /* ----------------------------------------------------------------------------
  * 8192C EEPROM/EFUSE share register definition.

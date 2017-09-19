@@ -130,9 +130,11 @@ typedef struct _RT_8723D_FIRMWARE_HDR {
 #endif
 
 /* For WoWLan , more reserved page
- * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:2,GTK EXT MEM:2, PNO: 6 */
+ * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:2,GTK EXT MEM:2, AOAC rpt 1, PNO: 6
+ * NS offload: 2 NDP info: 1
+ */
 #ifdef CONFIG_WOWLAN
-	#define WOWLAN_PAGE_NUM_8723D	0x07
+	#define WOWLAN_PAGE_NUM_8723D	0x0b
 #else
 	#define WOWLAN_PAGE_NUM_8723D	0x00
 #endif
@@ -169,11 +171,11 @@ typedef struct _RT_8723D_FIRMWARE_HDR {
 #include "HalVerDef.h"
 #include "hal_com.h"
 
-#define EFUSE_OOB_PROTECT_BYTES			15
+#define EFUSE_OOB_PROTECT_BYTES (96 + 1)
 
 #define HAL_EFUSE_MEMORY
 #define HWSET_MAX_SIZE_8723D                512
-#define EFUSE_REAL_CONTENT_LEN_8723D        256
+#define EFUSE_REAL_CONTENT_LEN_8723D        512
 #define EFUSE_MAP_LEN_8723D                 512
 #define EFUSE_MAX_SECTION_8723D             64
 
@@ -194,12 +196,6 @@ typedef struct _RT_8723D_FIRMWARE_HDR {
 #define EFUSE_BT_MAP_LEN		1024	/* 1k bytes */
 #define EFUSE_BT_MAX_SECTION		(EFUSE_BT_MAP_LEN / 8)
 #define EFUSE_PROTECT_BYTES_BANK	16
-
-typedef struct _C2H_EVT_HDR {
-	u8	CmdID;
-	u8	CmdLen;
-	u8	CmdSeq;
-} __attribute__((__packed__)) C2H_EVT_HDR, *PC2H_EVT_HDR;
 
 typedef enum tag_Package_Definition {
 	PACKAGE_DEFAULT,
@@ -264,18 +260,10 @@ VOID Hal_EfuseParseVoltage_8723D(PADAPTER pAdapter,
 VOID Hal_EfuseParseBoardType_8723D(PADAPTER Adapter,
 				   u8	*PROMContent, BOOLEAN AutoloadFail);
 
-#ifdef CONFIG_C2H_PACKET_EN
-	void rtl8723d_c2h_packet_handler(PADAPTER padapter, u8 *pbuf, u16 length);
-#endif
-
-
 void rtl8723d_set_hal_ops(struct hal_ops *pHalFunc);
 void init_hal_spec_8723d(_adapter *adapter);
 void SetHwReg8723D(PADAPTER padapter, u8 variable, u8 *val);
 void GetHwReg8723D(PADAPTER padapter, u8 variable, u8 *val);
-#ifdef CONFIG_C2H_PACKET_EN
-	void SetHwRegWithBuf8723D(PADAPTER padapter, u8 variable, u8 *pbuf, int len);
-#endif /* CONFIG_C2H_PACKET_EN */
 u8 SetHalDefVar8723D(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
 u8 GetHalDefVar8723D(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
 
@@ -307,8 +295,7 @@ void rtl8723d_stop_thread(_adapter *padapter);
 int FirmwareDownloadBT(IN PADAPTER Adapter, PRT_MP_FIRMWARE pFirmware);
 #endif
 void CCX_FwC2HTxRpt_8723d(PADAPTER padapter, u8 *pdata, u8 len);
-s32 c2h_id_filter_ccx_8723d(u8 *buf);
-s32 c2h_handler_8723d(PADAPTER padapter, u8 *pC2hEvent);
+
 u8 MRateToHwRate8723D(u8 rate);
 u8 HwRateToMRate8723D(u8 rate);
 

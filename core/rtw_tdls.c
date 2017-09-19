@@ -198,7 +198,7 @@ int _issue_nulldata_to_TDLS_peer_STA(_adapter *padapter, unsigned char *da, unsi
 
 	SetSeqNum(pwlanhdr, pmlmeext->mgnt_seq);
 	pmlmeext->mgnt_seq++;
-	SetFrameSubType(pframe, WIFI_QOS_DATA_NULL);
+	set_frame_sub_type(pframe, WIFI_QOS_DATA_NULL);
 
 	pframe += sizeof(struct rtw_ieee80211_hdr_3addr_qos);
 	pattrib->pktlen = sizeof(struct rtw_ieee80211_hdr_3addr_qos);
@@ -424,11 +424,12 @@ u8 *rtw_tdls_set_ht_cap(_adapter *padapter, u8 *pframe, struct pkt_attrib *pattr
 #ifdef CONFIG_80211AC_VHT
 void rtw_tdls_process_vht_cap(_adapter *padapter, struct sta_info *ptdls_sta, u8 *data, u8 Length)
 {
+	struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
 	struct mlme_priv		*pmlmepriv = &padapter->mlmepriv;
 	struct vht_priv			*pvhtpriv = &pmlmepriv->vhtpriv;
-	u8	cur_ldpc_cap = 0, cur_stbc_cap = 0, cur_beamform_cap = 0, rf_type = RF_1T1R;
+	u8	cur_ldpc_cap = 0, cur_stbc_cap = 0, cur_beamform_cap = 0, rf_type = RF_1T1R, tx_nss = 0;
 	u8	*pcap_mcs;
-	u8	vht_mcs[2];
 
 	_rtw_memset(&ptdls_sta->vhtpriv, 0, sizeof(struct vht_priv));
 	if (data && Length == 12) {
@@ -450,7 +451,7 @@ void rtw_tdls_process_vht_cap(_adapter *padapter, struct sta_info *ptdls_sta, u8
 	if (ptdls_sta->flags & WLAN_STA_VHT) {
 		if (REGSTY_IS_11AC_ENABLE(&padapter->registrypriv)
 		    && hal_chk_proto_cap(padapter, PROTO_CAP_11AC)
-		    && (!pmlmepriv->country_ent || COUNTRY_CHPLAN_EN_11AC(pmlmepriv->country_ent)))
+		    && (!rfctl->country_ent || COUNTRY_CHPLAN_EN_11AC(rfctl->country_ent)))
 			ptdls_sta->vhtpriv.vht_option = _TRUE;
 		else
 			ptdls_sta->vhtpriv.vht_option = _FALSE;
@@ -492,18 +493,9 @@ void rtw_tdls_process_vht_cap(_adapter *padapter, struct sta_info *ptdls_sta, u8
 	ptdls_sta->vhtpriv.ampdu_len = GET_VHT_CAPABILITY_ELE_MAX_RXAMPDU_FACTOR(data);
 
 	pcap_mcs = GET_VHT_CAPABILITY_ELE_RX_MCS(data);
-	_rtw_memcpy(vht_mcs, pcap_mcs, 2);
-
 	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
-	if ((rf_type == RF_1T1R) || (rf_type == RF_1T2R))
-		vht_mcs[0] |= 0xfc;
-	else if (rf_type == RF_2T2R)
-		vht_mcs[0] |= 0xf0;
-	else if (rf_type == RF_3T3R)
-		vht_mcs[0] |= 0xc0;
-
-	_rtw_memcpy(ptdls_sta->vhtpriv.vht_mcs_map, vht_mcs, 2);
-
+	tx_nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
+	rtw_vht_nss_to_mcsmap(tx_nss, ptdls_sta->vhtpriv.vht_mcs_map, pcap_mcs);
 	ptdls_sta->vhtpriv.vht_highest_rate = rtw_get_vht_highest_rate(ptdls_sta->vhtpriv.vht_mcs_map);
 }
 
@@ -546,20 +538,22 @@ u8 *rtw_tdls_set_vht_op_mode_notify(_adapter *padapter, u8 *pframe, struct pkt_a
 #endif
 
 
-u8 *rtw_tdls_set_sup_ch(struct mlme_ext_priv *pmlmeext, u8 *pframe, struct pkt_attrib *pattrib)
+u8 *rtw_tdls_set_sup_ch(_adapter *adapter, u8 *pframe, struct pkt_attrib *pattrib)
 {
+	struct rf_ctl_t *rfctl = adapter_to_rfctl(adapter);
 	u8 sup_ch[30 * 2] = {0x00}, ch_set_idx = 0, sup_ch_idx = 2;
 
-	do {
-		if (pmlmeext->channel_set[ch_set_idx].ChannelNum <= 14) {
+	while (ch_set_idx < rfctl->max_chan_nums && rfctl->channel_set[ch_set_idx].ChannelNum != 0) {
+		if (rfctl->channel_set[ch_set_idx].ChannelNum <= 14) {
+			/* TODO: fix 2.4G supported channel when channel doesn't start from 1 and continuous */
 			sup_ch[0] = 1;	/* First channel number */
-			sup_ch[1] = pmlmeext->channel_set[ch_set_idx].ChannelNum;	/* Number of channel */
+			sup_ch[1] = rfctl->channel_set[ch_set_idx].ChannelNum;	/* Number of channel */
 		} else {
-			sup_ch[sup_ch_idx++] = pmlmeext->channel_set[ch_set_idx].ChannelNum;
+			sup_ch[sup_ch_idx++] = rfctl->channel_set[ch_set_idx].ChannelNum;
 			sup_ch[sup_ch_idx++] = 1;
 		}
 		ch_set_idx++;
-	} while (pmlmeext->channel_set[ch_set_idx].ChannelNum != 0 && ch_set_idx < MAX_CHANNEL_NUM);
+	}
 
 	return rtw_set_ie(pframe, _SUPPORTED_CH_IE_, sup_ch_idx, sup_ch, &(pattrib->pktlen));
 }
@@ -832,9 +826,9 @@ s32 rtw_tdls_do_ch_sw(_adapter *padapter, struct sta_info *ptdls_sta, u8 chnl_ty
 			rtw_set_oper_bw(padapter, bwmode);
 
 			center_ch = rtw_get_center_ch(channel, bwmode, channel_offset);
-			pHalData->CurrentChannel = center_ch;
+			pHalData->current_channel = center_ch;
 			pHalData->CurrentCenterFrequencyIndex1 = center_ch;
-			pHalData->CurrentChannelBW = bwmode;
+			pHalData->current_channel_bw = bwmode;
 			pHalData->nCur40MhzPrimeSC = channel_offset;
 
 			if (bwmode == CHANNEL_WIDTH_80) {
@@ -1338,7 +1332,7 @@ int issue_tdls_dis_rsp(_adapter *padapter, struct tdls_txmgmt *ptxmgmt, u8 priva
 
 	SetSeqNum(pwlanhdr, pmlmeext->mgnt_seq);
 	pmlmeext->mgnt_seq++;
-	SetFrameSubType(pframe, WIFI_ACTION);
+	set_frame_sub_type(pframe, WIFI_ACTION);
 
 	pframe += sizeof(struct rtw_ieee80211_hdr_3addr);
 	pattrib->pktlen = sizeof(struct rtw_ieee80211_hdr_3addr);
@@ -1560,7 +1554,7 @@ int On_TDLS_Dis_Rsp(_adapter *padapter, union recv_frame *precv_frame)
 	struct rx_pkt_attrib *pattrib = &(precv_frame->u.hdr.attrib);
 	struct tdls_info *ptdlsinfo = &(padapter->tdlsinfo);
 	u8 empty_addr[ETH_ALEN] = { 0x00 };
-	int UndecoratedSmoothedPWDB;
+	int undecorated_smoothed_pwdb;
 	struct tdls_txmgmt txmgmt;
 	int ret = _SUCCESS;
 
@@ -1604,10 +1598,10 @@ int On_TDLS_Dis_Rsp(_adapter *padapter, union recv_frame *precv_frame)
 			}
 		}
 
-		rtw_hal_get_def_var(padapter, HAL_DEF_UNDERCORATEDSMOOTHEDPWDB, &UndecoratedSmoothedPWDB);
+		rtw_hal_get_def_var(padapter, HAL_DEF_UNDERCORATEDSMOOTHEDPWDB, &undecorated_smoothed_pwdb);
 
-		if (pattrib->phy_info.RxPWDBAll + TDLS_SIGNAL_THRESH >= UndecoratedSmoothedPWDB) {
-			RTW_INFO("pattrib->RxPWDBAll=%d, pdmpriv->UndecoratedSmoothedPWDB=%d\n", pattrib->phy_info.RxPWDBAll, UndecoratedSmoothedPWDB);
+		if (pattrib->phy_info.RxPWDBAll + TDLS_SIGNAL_THRESH >= undecorated_smoothed_pwdb) {
+			RTW_INFO("pattrib->RxPWDBAll=%d, pdmpriv->undecorated_smoothed_pwdb=%d\n", pattrib->phy_info.RxPWDBAll, undecorated_smoothed_pwdb);
 			_rtw_memcpy(txmgmt.peer, psa, ETH_ALEN);
 			issue_tdls_setup_req(padapter, &txmgmt, _FALSE);
 		}
@@ -2642,6 +2636,7 @@ void wfd_ie_tdls(_adapter *padapter, u8 *pframe, u32 *pktlen)
 
 void rtw_build_tdls_setup_req_ies(_adapter *padapter, struct xmit_frame *pxmitframe, u8 *pframe, struct tdls_txmgmt *ptxmgmt)
 {
+	struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
 	struct registry_priv	*pregistrypriv = &padapter->registrypriv;
 	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
 	struct pkt_attrib	*pattrib = &pxmitframe->attrib;
@@ -2668,7 +2663,7 @@ void rtw_build_tdls_setup_req_ies(_adapter *padapter, struct xmit_frame *pxmitfr
 
 	pframe = rtw_tdls_set_capability(padapter, pframe, pattrib);
 	pframe = rtw_tdls_set_supported_rate(padapter, pframe, pattrib);
-	pframe = rtw_tdls_set_sup_ch(&(padapter->mlmeextpriv), pframe, pattrib);
+	pframe = rtw_tdls_set_sup_ch(padapter, pframe, pattrib);
 	pframe = rtw_tdls_set_sup_reg_class(pframe, pattrib);
 
 	if (pattrib->encrypt)
@@ -2703,7 +2698,7 @@ void rtw_build_tdls_setup_req_ies(_adapter *padapter, struct xmit_frame *pxmitfr
 	if ((padapter->mlmepriv.htpriv.ht_option == _TRUE) && (pmlmeext->cur_channel > 14)
 	    && REGSTY_IS_11AC_ENABLE(pregistrypriv)
 	    && hal_chk_proto_cap(padapter, PROTO_CAP_11AC)
-	    && (!padapter->mlmepriv.country_ent || COUNTRY_CHPLAN_EN_11AC(padapter->mlmepriv.country_ent))
+	    && (!rfctl->country_ent || COUNTRY_CHPLAN_EN_11AC(rfctl->country_ent))
 	   ) {
 		pframe = rtw_tdls_set_aid(padapter, pframe, pattrib);
 		pframe = rtw_tdls_set_vht_cap(padapter, pframe, pattrib);
@@ -2719,6 +2714,7 @@ void rtw_build_tdls_setup_req_ies(_adapter *padapter, struct xmit_frame *pxmitfr
 
 void rtw_build_tdls_setup_rsp_ies(_adapter *padapter, struct xmit_frame *pxmitframe, u8 *pframe, struct tdls_txmgmt *ptxmgmt)
 {
+	struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
 	struct registry_priv	*pregistrypriv = &padapter->registrypriv;
 	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
 	struct pkt_attrib	*pattrib = &pxmitframe->attrib;
@@ -2755,7 +2751,7 @@ void rtw_build_tdls_setup_rsp_ies(_adapter *padapter, struct xmit_frame *pxmitfr
 	pframe = rtw_tdls_set_dialog(pframe, pattrib, ptxmgmt);
 	pframe = rtw_tdls_set_capability(padapter, pframe, pattrib);
 	pframe = rtw_tdls_set_supported_rate(padapter, pframe, pattrib);
-	pframe = rtw_tdls_set_sup_ch(&(padapter->mlmeextpriv), pframe, pattrib);
+	pframe = rtw_tdls_set_sup_ch(padapter, pframe, pattrib);
 	pframe = rtw_tdls_set_sup_reg_class(pframe, pattrib);
 
 	if (pattrib->encrypt) {
@@ -2803,7 +2799,7 @@ void rtw_build_tdls_setup_rsp_ies(_adapter *padapter, struct xmit_frame *pxmitfr
 	if ((padapter->mlmepriv.htpriv.ht_option == _TRUE) && (pmlmeext->cur_channel > 14)
 	    && REGSTY_IS_11AC_ENABLE(pregistrypriv)
 	    && hal_chk_proto_cap(padapter, PROTO_CAP_11AC)
-	    && (!padapter->mlmepriv.country_ent || COUNTRY_CHPLAN_EN_11AC(padapter->mlmepriv.country_ent))
+	    && (!rfctl->country_ent || COUNTRY_CHPLAN_EN_11AC(rfctl->country_ent))
 	   ) {
 		pframe = rtw_tdls_set_aid(padapter, pframe, pattrib);
 		pframe = rtw_tdls_set_vht_cap(padapter, pframe, pattrib);
@@ -2820,6 +2816,7 @@ void rtw_build_tdls_setup_rsp_ies(_adapter *padapter, struct xmit_frame *pxmitfr
 
 void rtw_build_tdls_setup_cfm_ies(_adapter *padapter, struct xmit_frame *pxmitframe, u8 *pframe, struct tdls_txmgmt *ptxmgmt)
 {
+	struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
 	struct registry_priv	*pregistrypriv = &padapter->registrypriv;
 	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
@@ -2880,7 +2877,7 @@ void rtw_build_tdls_setup_cfm_ies(_adapter *padapter, struct xmit_frame *pxmitfr
 	    && (ptdls_sta->vhtpriv.vht_option == _TRUE) && (pmlmeext->cur_channel > 14)
 	    && REGSTY_IS_11AC_ENABLE(pregistrypriv)
 	    && hal_chk_proto_cap(padapter, PROTO_CAP_11AC)
-	    && (!padapter->mlmepriv.country_ent || COUNTRY_CHPLAN_EN_11AC(padapter->mlmepriv.country_ent))
+	    && (!rfctl->country_ent || COUNTRY_CHPLAN_EN_11AC(rfctl->country_ent))
 	   ) {
 		pframe = rtw_tdls_set_vht_operation(padapter, pframe, pattrib, pmlmeext->cur_channel);
 		pframe = rtw_tdls_set_vht_op_mode_notify(padapter, pframe, pattrib, pmlmeext->cur_bwmode);
@@ -2948,7 +2945,7 @@ void rtw_build_tdls_dis_rsp_ies(_adapter *padapter, struct xmit_frame *pxmitfram
 
 	pframe = rtw_tdls_set_supported_rate(padapter, pframe, pattrib);
 
-	pframe = rtw_tdls_set_sup_ch(pmlmeext, pframe, pattrib);
+	pframe = rtw_tdls_set_sup_ch(padapter, pframe, pattrib);
 
 	if (privacy)
 		pframe = rtw_tdls_set_rsnie(ptxmgmt, pframe, pattrib, _TRUE, NULL);
@@ -3246,15 +3243,15 @@ void _tdls_pti_timer_hdl(void *FunctionContext)
 void rtw_init_tdls_timer(_adapter *padapter, struct sta_info *psta)
 {
 	psta->padapter = padapter;
-	_init_timer(&psta->TPK_timer, padapter->pnetdev, _tdls_tpk_timer_hdl, psta);
+	rtw_init_timer(&psta->TPK_timer, padapter, _tdls_tpk_timer_hdl, psta);
 #ifdef CONFIG_TDLS_CH_SW
-	_init_timer(&psta->ch_sw_timer, padapter->pnetdev, _tdls_ch_switch_timer_hdl, psta);
-	_init_timer(&psta->delay_timer, padapter->pnetdev, _tdls_delay_timer_hdl, psta);
-	_init_timer(&psta->stay_on_base_chnl_timer, padapter->pnetdev, _tdls_stay_on_base_chnl_timer_hdl, psta);
-	_init_timer(&psta->ch_sw_monitor_timer, padapter->pnetdev, _tdls_ch_switch_monitor_timer_hdl, psta);
+	rtw_init_timer(&psta->ch_sw_timer, padapter, _tdls_ch_switch_timer_hdl, psta);
+	rtw_init_timer(&psta->delay_timer, padapter, _tdls_delay_timer_hdl, psta);
+	rtw_init_timer(&psta->stay_on_base_chnl_timer, padapter, _tdls_stay_on_base_chnl_timer_hdl, psta);
+	rtw_init_timer(&psta->ch_sw_monitor_timer, padapter, _tdls_ch_switch_monitor_timer_hdl, psta);
 #endif
-	_init_timer(&psta->handshake_timer, padapter->pnetdev, _tdls_handshake_timer_hdl, psta);
-	_init_timer(&psta->pti_timer, padapter->pnetdev, _tdls_pti_timer_hdl, psta);
+	rtw_init_timer(&psta->handshake_timer, padapter, _tdls_handshake_timer_hdl, psta);
+	rtw_init_timer(&psta->pti_timer, padapter, _tdls_pti_timer_hdl, psta);
 }
 
 void rtw_free_tdls_timer(struct sta_info *psta)

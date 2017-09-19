@@ -129,7 +129,7 @@ PHY_SetRFEReg_8192E(
 void
 phy_SpurCalibration_8192E(
 	IN	PADAPTER			Adapter,
-	IN	SPUR_CAL_METHOD	Method
+	IN	enum spur_cal_method	method
 );
 void PHY_SpurCalibration_8192E(IN PADAPTER Adapter);
 
@@ -144,9 +144,9 @@ phy_SpurCalibration_8192E_NBI(
  *   */
 
 VOID
-PHY_SetRFPathSwitch_8192E(
+phy_set_rf_path_switch_8192e(
 	IN	PADAPTER	pAdapter,
-	IN	BOOLEAN		bMain
+	IN	bool		bMain
 );
 
 /*--------------------------Exported Function prototype---------------------*/

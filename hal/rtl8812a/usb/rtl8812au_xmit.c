@@ -217,15 +217,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz , u8 ba
 
 		SET_TX_DESC_USE_RATE_8812(ptxdesc, 1);
 
-#ifdef CONFIG_INTEL_PROXIM
-		if ((padapter->proximity.proxim_on == _TRUE) && (pattrib->intel_proxim == _TRUE)) {
-			RTW_INFO("\n %s pattrib->rate=%d\n", __FUNCTION__, pattrib->rate);
-			SET_TX_DESC_TX_RATE_8812(ptxdesc, pattrib->rate);
-		} else
-#endif
-		{
-			SET_TX_DESC_TX_RATE_8812(ptxdesc, MRateToHwRate(pattrib->rate));
-		}
+		SET_TX_DESC_TX_RATE_8812(ptxdesc, MRateToHwRate(pattrib->rate));
 
 		/* VHT NDPA or HT NDPA Packet for Beamformer. */
 #ifdef CONFIG_BEAMFORMING
@@ -282,7 +274,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz , u8 ba
 	}
 
 #ifdef CONFIG_ANTENNA_DIVERSITY
-	ODM_SetTxAntByTxInfo(&pHalData->odmpriv, ptxdesc, pxmitframe->attrib.mac_id);
+	odm_set_tx_ant_by_tx_info(&pHalData->odmpriv, ptxdesc, pxmitframe->attrib.mac_id);
 #endif
 
 #ifdef CONFIG_BEAMFORMING
@@ -316,15 +308,18 @@ s32 rtl8812au_xmit_buf_handler(PADAPTER padapter)
 	pxmitpriv = &padapter->xmitpriv;
 
 	ret = _rtw_down_sema(&pxmitpriv->xmit_sema);
-	if (_FAIL == ret) {
+	if (ret == _FAIL)
 		return _FAIL;
-	}
 
 	if (RTW_CANNOT_RUN(padapter)) {
+		RTW_DBG(FUNC_ADPT_FMT "- bDriverStopped(%s) bSurpriseRemoved(%s)\n",
+			FUNC_ADPT_ARG(padapter),
+			rtw_is_drv_stopped(padapter) ? "True" : "False",
+			rtw_is_surprise_removed(padapter) ? "True" : "False");
 		return _FAIL;
 	}
 
-	if (rtw_mi_check_pending_xmitbuf(padapter) == 0)
+	if (check_pending_xmitbuf(pxmitpriv) == _FALSE)
 		return _SUCCESS;
 
 #ifdef CONFIG_LPS_LCLK
@@ -332,25 +327,63 @@ s32 rtl8812au_xmit_buf_handler(PADAPTER padapter)
 	if (ret != _SUCCESS) {
 		return _SUCCESS;
 	}
-#endif
+#endif /* CONFIG_LPS_LCLK */
 
 	do {
 		pxmitbuf = dequeue_pending_xmitbuf(pxmitpriv);
 		if (pxmitbuf == NULL)
 			break;
 
-		rtw_write_port(padapter, pxmitbuf->ff_hwaddr, pxmitbuf->len, (unsigned char *)pxmitbuf);
-
+		/* only XMITBUF_DATA & XMITBUF_MGNT */
+		rtw_write_port_and_wait(padapter, pxmitbuf->ff_hwaddr, pxmitbuf->len, (unsigned char *)pxmitbuf, 500);
 	} while (1);
 
 #ifdef CONFIG_LPS_LCLK
 	rtw_unregister_tx_alive(padapter);
-#endif
+#endif /*CONFIG_LPS_LCLK */
 
 	return _SUCCESS;
 }
-#endif
+#endif /* CONFIG_XMIT_THREAD_MODE */
 
+
+/* BUFFER ACCESS CTRL	*/
+#define DBGBUF_TXPKTBUF         0x69
+#define DBGBUF_RXPKTBUF         0xA5
+#define DBGBUF_TXRPTBUF         0x7F
+
+#define BIT_TXPKTBUF_DBG        BIT7
+#define BIT_RXPKTBUF_DBG        BIT0
+#define BIT_TXRPTBUF_DBG        BIT4
+u32 upload_txpktbuf_8812au(_adapter *adapter, u8 *buf, u32 buflen)
+{
+	u32 len = 0, j, qw_addr = 0;
+	u16 beacon_head = 0xF7, loop_cnt;
+
+	RTW_INFO("%s(): upload reserved page from 0x%02X, len=%d\n", __func__, beacon_head, buflen);
+	rtw_write8(adapter, REG_PKT_BUFF_ACCESS_CTRL, DBGBUF_TXPKTBUF);
+	do {
+		for (j = 0 ; j < 8 ; j++) {
+			if ((len+j) >= buflen)
+				break;
+			rtw_write8(adapter, REG_PKTBUF_DBG_DATA_L + j, buf[len++]);
+		}
+		rtw_write32(adapter, REG_PKTBUF_DBG_CTRL, 0xff800000+(beacon_head<<6) + qw_addr);
+		loop_cnt = 0;
+		while ((rtw_read32(adapter, REG_PKTBUF_DBG_CTRL) & BIT23) == 1) {
+			rtw_udelay_os(10);
+			if (loop_cnt++ == 100)
+				return _FALSE;
+		}
+		qw_addr++;
+		if ((len+j) >= buflen)
+			break;
+	} while (_TRUE);
+
+	rtw_write32(adapter, REG_CPU_MGQ_INFORMATION, rtw_read32(adapter, REG_CPU_MGQ_INFORMATION)|BIT28);
+	RTW_INFO("%s(): end\n", __func__);
+	return _TRUE;
+}
 
 /* for non-agg data frame or  management frame */
 static s32 rtw_dump_xframe(_adapter *padapter, struct xmit_frame *pxmitframe)
@@ -400,13 +433,27 @@ static s32 rtw_dump_xframe(_adapter *padapter, struct xmit_frame *pxmitframe)
 
 		ff_hwaddr = rtw_get_ff_hwaddr(pxmitframe);
 
+		if (IS_FULL_SPEED_USB(padapter) && (ff_hwaddr == BCN_QUEUE_INX)) {
+			inner_ret = upload_txpktbuf_8812au(padapter, mem_addr, w_sz);
+			if (inner_ret) {
+				rtw_write32(padapter, REG_CPU_MGQ_INFORMATION, rtw_read32(padapter, REG_CPU_MGQ_INFORMATION)|BIT28);
+				rtw_sctx_done_err(&pxmitbuf->sctx, RTW_SCTX_DONE_SUCCESS);
+			}
+			rtw_free_xmitbuf(pxmitpriv, pxmitbuf);
+		} else {
 #ifdef CONFIG_XMIT_THREAD_MODE
 		pxmitbuf->len = w_sz;
 		pxmitbuf->ff_hwaddr = ff_hwaddr;
-		enqueue_pending_xmitbuf(pxmitpriv, pxmitbuf);
+
+		if (pxmitbuf->buf_tag == XMITBUF_CMD)
+			/* download rsvd page */
+			inner_ret = rtw_write_port(padapter, ff_hwaddr, w_sz, (unsigned char *)pxmitbuf);
+		else
+			enqueue_pending_xmitbuf(pxmitpriv, pxmitbuf);
 #else
 		inner_ret = rtw_write_port(padapter, ff_hwaddr, w_sz, (unsigned char *)pxmitbuf);
 #endif
+		}
 		rtw_count_tx_stats(padapter, pxmitframe, sz);
 
 		/* RTW_INFO("rtw_write_port, w_sz=%d, sz=%d, txdesc_sz=%d, tid=%d\n", w_sz, sz, w_sz-sz, pattrib->priority);       */
@@ -739,7 +786,18 @@ agg_end:
 	ff_hwaddr = rtw_get_ff_hwaddr(pfirstframe);
 	/* RTW_INFO("%s ===================================== write port,buf_size(%d)\n",__FUNCTION__,pbuf_tail); */
 	/* xmit address == ((xmit_frame*)pxmitbuf->priv_data)->buf_addr */
+#ifdef CONFIG_XMIT_THREAD_MODE
+	pxmitbuf->len = pbuf_tail;
+	pxmitbuf->ff_hwaddr = ff_hwaddr;
+
+	if (pxmitbuf->buf_tag == XMITBUF_CMD)
+		/* download rsvd page*/
+		rtw_write_port(padapter, ff_hwaddr, pbuf_tail, (u8 *)pxmitbuf);
+	else
+		enqueue_pending_xmitbuf(pxmitpriv, pxmitbuf);
+#else
 	rtw_write_port(padapter, ff_hwaddr, pbuf_tail, (u8 *)pxmitbuf);
+#endif
 
 
 	/* 3 5. update statisitc */
@@ -858,7 +916,7 @@ static s32 pre_xmitframe(_adapter *padapter, struct xmit_frame *pxmitframe)
 	if (rtw_xmit_ac_blocked(padapter) == _TRUE)
 		goto enqueue;
 
-	if (padapter->dvobj->iface_state.lg_sta_num)
+	if (DEV_STA_LG_NUM(padapter->dvobj))
 		goto enqueue;
 
 	pxmitbuf = rtw_alloc_xmitbuf(pxmitpriv);
