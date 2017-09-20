@@ -1,8 +1,8 @@
 # Rtl8812AU Realtek 802.11ac Linux Driver(rtl8812au)
 
-This driver is an update of version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830) of the RealTek 8812AU USB WiFi Linux driver for AC1200 (801.11ac) adapters. 
+This driver is an update to version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830) of RealTek's 8812AU USB WiFi Linux driver for AC1200 (801.11ac) adapters. 
 
-It supports supports USB 3.0 and has been succesfully tested to work with Linux Kernels 3.16.x to 4.12.x as well as AMD's Radeon Open Compute (ROCm) kernel.
+It supports supports USB 3.0 and has been succesfully tested to work with *Linux Kernels 3.16.x to 4.12.x* as well as AMD's Radeon Open Compute (ROCm) kernel.
 
 The original version of this driver was downloaded from [Tenda](http://www.tenda.com.cn/download/detail-2614.html).  However, several improvements have been made including support for the Tenda U12 and the addition of a rtw_led_ctrl module parameter.
 
@@ -29,6 +29,7 @@ New Device Support Added by [@xxNull-lsk](https://github.com/xxNull-lsk):
 * Kernels
 	* 3.16.x to 4.12.x
 	* AMD ROCm Linux Kernel: 4.11.0-kfd-compute-rocm-rel-1.6-148
+
 
 ## Building (How to Install)
 
