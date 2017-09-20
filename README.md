@@ -19,7 +19,7 @@ From driver's device USB ID list and independent testers:
 | 		  		 | Sitecom Edimax	| ZyXEL *		 |  WD Cybertan 	  | BrosTrend Long Range 1200Mbps     
 
 
-## Enviroments Tested On
+## Enviroments Succesfully Tested
 * Ubuntu 14.04 and 16.04
 * Fedora 25
 * Kernels
