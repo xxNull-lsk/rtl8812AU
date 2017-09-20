@@ -1,12 +1,9 @@
 # Rtl8812AU Realtek 802.11ac Linux Driver(rtl8812au)
 
-This is version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830) of the RealTek 8812AU USB WiFi driver for AC1200 (801.11ac) Wireless Dual-Band USB Adapters
+This is version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830) of the RealTek 8812AU USB WiFi driver for AC1200 (801.11ac) Wireless Dual-Band USB Adapters. It supports supports USB 3.0 and has been tested to work with Linux Kernels 3.16.x to 4.12.x 
 
-It was downloaded from[Tenda](http://www.tenda.com.cn/download/detail-2614.html)  
+This version was originally downloaded from [Tenda](http://www.tenda.com.cn/download/detail-2614.html).  However, several improvements have been made including the addition of rtw_led_ctrl module parameter, so the led blinks normally or is always on or off.
 
-Earlier versions of this driver (e.g., 4.3.14) may break when Ubuntu updates to 4.4.0.93.x kernels. Version 5.1.5 fixes that issue.
-
-Supports USB 3.0
 
 # Supported Device List
 This list is from the source USB IDs:
