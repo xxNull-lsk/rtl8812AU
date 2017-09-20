@@ -13,7 +13,7 @@ From driver's device USB ID list and independent testers:
 
 | - | - | - | - | - |
 -----------------|------------------|----------------|--------------------|----------------------------------------|
-| Belkin Sercomm | I-O DATA Edimax  | HAWKINGEdimax  |  EnGenius EnGenius | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
+| Belkin Sercomm | I-O DATA Edimax  | HAWKING Edimax |  EnGenius EnGenius | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
 | D-Link ALPHA   | Logitec Edimax   | ZyXEL * 		 | 	Phlanex Abocom    | D-Link DWA-182
 | Edimax Edimax  | NEC *  			| D-Link ALPHA   |  Abocom Abocom     | BrosTrend Long Range 1200Mbps
 | Sitecom Edimax | ASUS Edimax      | WD Cybertan    |  D-Link Cameo
