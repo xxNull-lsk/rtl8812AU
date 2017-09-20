@@ -9,24 +9,19 @@ The original version of this driver was downloaded from [Tenda](http://www.tenda
 
 # Supported Device List
 
-From driver's device USB ID list:
+From driver's device USB ID list and independent testers:
 
 | - | - | - | - | - |
------------------|------------------|----------------|--------------------|-----------------|
-| Belkin sercomm | I-O DATA Edimax  | HAWKINGEdimax  |  EnGenius EnGenius | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
-| D-Link ALPHA   | Logitec Edimax   | ZyXEL * 		 | 	Phlanex Abocom
-| Edimax Edimax  | NEC *  			| D-Link ALPHA   |  Abocom Abocom 
+-----------------|------------------|----------------|--------------------|----------------------------------------|
+| Belkin Sercomm | I-O DATA Edimax  | HAWKINGEdimax  |  EnGenius EnGenius | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
+| D-Link ALPHA   | Logitec Edimax   | ZyXEL * 		 | 	Phlanex Abocom    | D-Link DWA-182
+| Edimax Edimax  | NEC *  			| D-Link ALPHA   |  Abocom Abocom     | BrosTrend Long Range 1200Mbps
 | Sitecom Edimax | ASUS Edimax      | WD Cybertan    |  D-Link Cameo
 
-
-From WebSite:
-* D-Link DWA-182
 
 New Device Support Added by [@xxNull-lsk](https://github.com/xxNull-lsk):
 * Tenda U12
 
-Tested by [@codesport](https://github.com/codesport) to Work With:
-* BrosTrend Long Range 1200Mbps
 
 ## Enviroments Tested In
 * Ubuntu 14.04 and 16.04
