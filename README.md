@@ -4,11 +4,11 @@ This driver is an update of version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830
 
 It supports supports USB 3.0 and has been succesfully tested to work with Linux Kernels 3.16.x to 4.12.x as well as AMD's Radeon Open Compute (ROCm) kernel.
 
-The original version of this driver was downloaded from [Tenda](http://www.tenda.com.cn/download/detail-2614.html).  However, several improvements have been made including the addition of a rtw_led_ctrl module parameter. This allows setting the led to blink normally or stay in an always on or off state.
+The original version of this driver was downloaded from [Tenda](http://www.tenda.com.cn/download/detail-2614.html).  However, several improvements have been made including support for the Tenda U12 and the addition of a rtw_led_ctrl module parameter.
 
 
 # Supported Device List
-This list is from the source USB IDs:
+(from the source USB IDs)
 + Belkin sercomm  
 + D-Link ALPHA  
 + Edimax Edimax  
@@ -27,19 +27,19 @@ This list is from the source USB IDs:
 + D-Link Cameo
 + Tp-Link Archer T4U v1, T4U v2, T4UH V1
 
-This List is from WebSite:
+From WebSite:
 + D-Link DWA-182
 
-Tested by [@codesport](https://github.com/codesport):
+New Device Support Added by [@xxNull-lsk](https://github.com/xxNull-lsk) For:
++ Tenda U12
+
+Tested by [@codesport](https://github.com/codesport) to Work With:
 + BrosTrend Long Range 1200Mbps
 
-# My Modifications
-- Added support for Tenda U12.
-
 ## Tested On
-Ubuntu 14.04 and 16.04
-Fedora 25
-Kernels
++ Ubuntu 14.04 and 16.04
++ Fedora 25
++ Kernels
 ** 3.16.x to 4.12.x
 ** AMD ROCm Linux Kernel: 4.11.0-kfd-compute-rocm-rel-1.6-148
 
@@ -59,8 +59,8 @@ To use dkms install:
 $ sudo make -f Makefile.dkms install
 ```
 
-## Something else
-You may have to install additional packages to build it
+## Additional Info
+You may have to install additional packages to complete the build:
 ``` sh
 $ sudo apt-get install build-essential
 $ sudo apt-get install linux-headers-4.4.0-67-generic #Change "4.4.0-67" to your desired kernel version
