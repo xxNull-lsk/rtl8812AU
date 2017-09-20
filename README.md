@@ -10,6 +10,7 @@ The original version of this driver was downloaded from [Tenda](http://www.tenda
 # Supported Device List
 
 From driver's device USB ID list:
+
 | - | - | - | - | - |
 -----------------|------------------|----------------|--------------------|-----------------|
 | Belkin sercomm | I-O DATA Edimax  | HAWKINGEdimax  |  EnGenius EnGenius | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
