@@ -4,7 +4,7 @@ This driver is an update to version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830
 
 It supports supports USB 3.0 and has been succesfully tested to work with *Linux Kernels 3.16.x to 4.12.x* as well as AMD's Radeon Open Compute (ROCm) kernel.
 
-The original version of this driver was downloaded from [Tenda](http://www.tenda.com.cn/download/detail-2614.html).  However, several improvements have been made including support for the Tp-Link Archer and Tenda U12 dongles as well as THE addition of an [LED control module (rtw_led_ctrl)](https://github.com/xxNull-lsk/rtl8812AU/pull/6#issuecomment-3261505020).
+The original version of this driver was downloaded from [Tenda](http://www.tenda.com.cn/download/detail-2614.html).  However, several improvements have been made including support for the Tp-Link Archer and Tenda U12 dongles as well as the addition of an [LED control module (rtw_led_ctrl)](https://github.com/xxNull-lsk/rtl8812AU/pull/6#issuecomment-3261505020).
 
 
 # Supported Device List
@@ -19,7 +19,7 @@ From driver's device USB ID list and independent testers:
 | 		  		 | Sitecom Edimax	| ZyXEL *		 |  WD Cybertan 	  | BrosTrend Long Range 1200Mbps     
 
 
-## Enviroments Tested In
+## Enviroments Tested On
 * Ubuntu 14.04 and 16.04
 * Fedora 25
 * Kernels
