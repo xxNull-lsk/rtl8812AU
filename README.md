@@ -11,7 +11,8 @@ The original version of this driver was downloaded from [Tenda](http://www.tenda
 
 From driver's device USB ID list:
 
-| Belkin sercomm | I-O DATA Edimax  | HAWKINGEdimax  |  EnGenius EnGenius   | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
+-----------------|------------------|----------------|--------------------|-----------------|
+| Belkin sercomm | I-O DATA Edimax  | HAWKINGEdimax  |  EnGenius EnGenius | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
 | D-Link ALPHA   | Logitec Edimax   | ZyXEL * 		 | 	Phlanex Abocom
 | Edimax Edimax  | NEC *  			| D-Link ALPHA   |  Abocom Abocom 
 | Sitecom Edimax | ASUS Edimax      | WD Cybertan    |  D-Link Cameo
