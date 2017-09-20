@@ -1,6 +1,6 @@
-# Rtl8812AU Realtek 802.11ac Linux Driver(rtl8812au)
+# Rtl8812AU Realtek 802.11ac Linux Driver (rtl8812au)
 
-This driver is an update to version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830) of RealTek's 8812AU USB WiFi Linux driver for AC1200 (801.11ac) adapters. 
+This driver is an update to version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830) of Realtek's 8812AU USB WiFi Linux driver for AC1200 (801.11ac) adapters. 
 
 It supports supports USB 3.0 and has been succesfully tested to work with *Linux Kernels 3.16.x to 4.12.x* as well as AMD's Radeon Open Compute (ROCm) kernel.
 
