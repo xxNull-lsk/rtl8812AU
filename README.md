@@ -1,11 +1,15 @@
-# Rtl8812AU
-Download from[Tenda](http://www.tenda.com.cn/download/detail-2614.html)  
-Version rtl8812AU_linux_v5.1.5_19247.20160830
+# Rtl8812AU Realtek 802.11ac Linux Driver(rtl8812au)
 
-Support USB 3.0
+This is version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830) of the RealTek 8812AU USB WiFi driver for AC1200 (801.11ac) Wireless Dual-Band USB Adapters
 
-# Support Device List
-This list is from the source USB IDS
+It was downloaded from[Tenda](http://www.tenda.com.cn/download/detail-2614.html)  
+
+Earlier versions of this driver (e.g., 4.3.14) may break when Ubuntu updates to 4.4.0.93.x kernels. Version 5.1.5 fixes that issue.
+
+Supports USB 3.0
+
+# Supported Device List
+This list is from the source USB IDs:
 + Belkin sercomm  
 + D-Link ALPHA  
 + Edimax Edimax  
@@ -22,35 +26,43 @@ This list is from the source USB IDS
 + Phlanex Abocom
 + Abocom Abocom
 + D-Link Cameo
-+ Tp-Link Archer T4U v1, T4U v2 y T4UH V1
++ Tp-Link Archer T4U v1, T4U v2, T4UH V1
 
 This List is from WebSite:
 + D-Link DWA-182
 
+Tested by [@codesport](https://github.com/codesport):
++ BrosTrend Long Range 1200Mbps
+
 # My Modifications
-- Support Tenda U12.
+- Added support for Tenda U12.
 
-## Test
-Ubuntu 14.04&16.04
-Kernel 3.16.x~4.4.x
+## Tested On
+Ubuntu 14.04 and 16.04
+Fedora 25
+Kernels
+** 3.16.x to 4.12.x
+** Radeon Open Compute (ROCm) Linux Kernel: 4.11.0-kfd-compute-rocm-rel-1.6-148
 
-## Build
+## Building (How to Install)
+
+To build and install module manually:
+
 ``` sh
 # make
 # sudo make install
-# sudo modpro -a 8812au
+# sudo modprobe -a 8812au
 ```
 
-## DKMS
+To use dkms install:
 
 ``` sh
-# sudo make -f Makefile.dkms install
+$ sudo make -f Makefile.dkms install
 ```
 
 ## Something else
-Maybe you should install some packet to build it.
+You may have to install additional packages to build it
 ``` sh
-# sudo apt-get install build-essential
-# sudo apt-get install linux-headers-4.4.0-67-generic
+$ sudo apt-get install build-essential
+$ sudo apt-get install linux-headers-4.4.0-67-generic #Change "4.4.0-67" to your desired kernel version
 ```
-Change 4.4.0-67 to your kernel version.
