@@ -31,17 +31,17 @@ From WebSite:
 + D-Link DWA-182
 
 New Device Support Added by [@xxNull-lsk](https://github.com/xxNull-lsk) For:
-+ Tenda U12
+* Tenda U12
 
 Tested by [@codesport](https://github.com/codesport) to Work With:
-+ BrosTrend Long Range 1200Mbps
+* BrosTrend Long Range 1200Mbps
 
 ## Tested On
-+ Ubuntu 14.04 and 16.04
-+ Fedora 25
-+ Kernels
-** 3.16.x to 4.12.x
-** AMD ROCm Linux Kernel: 4.11.0-kfd-compute-rocm-rel-1.6-148
+* Ubuntu 14.04 and 16.04
+* Fedora 25
+* Kernels
+	* 3.16.x to 4.12.x
+	* AMD ROCm Linux Kernel: 4.11.0-kfd-compute-rocm-rel-1.6-148
 
 ## Building (How to Install)
 
@@ -59,7 +59,7 @@ To use dkms install:
 $ sudo make -f Makefile.dkms install
 ```
 
-## Additional Info
+### Additional Info
 You may have to install additional packages to complete the build:
 ``` sh
 $ sudo apt-get install build-essential
