@@ -4,26 +4,22 @@ This driver is an update to version 5.1.5 (rtl8812AU_linux_v5.1.5_19247.20160830
 
 It supports supports USB 3.0 and has been succesfully tested to work with *Linux Kernels 3.16.x to 4.12.x* as well as AMD's Radeon Open Compute (ROCm) kernel.
 
-The original version of this driver was downloaded from [Tenda](http://www.tenda.com.cn/download/detail-2614.html).  However, several improvements have been made including support for the Tenda U12 and the addition of a rtw_led_ctrl module parameter.
+The original version of this driver was downloaded from [Tenda](http://www.tenda.com.cn/download/detail-2614.html).  However, several improvements have been made including support for the Tp-Link Archer and Tenda U12 dongles as well as the addition of an [LED control module (rtw_led_ctrl)](https://github.com/xxNull-lsk/rtl8812AU/pull/6#issuecomment-3261505020).
 
 
 # Supported Device List
 
 From driver's device USB ID list and independent testers:
 
-| - | - | - | - | - |
+| D-Link		 | Edimax			| Others		 | Others 			  | Others |
 -----------------|------------------|----------------|--------------------|----------------------------------------|
-| Belkin Sercomm | I-O DATA Edimax  | HAWKING Edimax |  EnGenius EnGenius | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
-| D-Link ALPHA   | Logitec Edimax   | ZyXEL * 		 | 	Phlanex Abocom    | D-Link DWA-182
-| Edimax Edimax  | NEC *  			| D-Link ALPHA   |  Abocom Abocom     | BrosTrend Long Range 1200Mbps
-| Sitecom Edimax | ASUS Edimax      | WD Cybertan    |  D-Link Cameo
+| ALPHA			 | I-O DATA Edimax  | HAWKING Edimax |  EnGenius EnGenius | Belkin Sercomm 
+| DWA-182  		 | Logitec Edimax   | ASUS Edimax  	 | 	Phlanex Abocom    | Tenda U12
+| Cameo			 | Edimax Edimax  	| NEC *  		 |  Abocom Abocom     | Tp-Link Archer: T4U v1, T4U v2, T4UH V1
+| 		  		 | Sitecom Edimax	| ZyXEL *		 |  WD Cybertan 	  | BrosTrend Long Range 1200Mbps     
 
 
-New Device Support Added by [@xxNull-lsk](https://github.com/xxNull-lsk):
-* Tenda U12
-
-
-## Enviroments Tested In
+## Enviroments Succesfully Tested
 * Ubuntu 14.04 and 16.04
 * Fedora 25
 * Kernels
@@ -35,21 +31,21 @@ New Device Support Added by [@xxNull-lsk](https://github.com/xxNull-lsk):
 
 To build and install module manually:
 
-``` sh
-# make
-# sudo make install
-# sudo modprobe -a 8812au
+```
+$ make
+$ sudo make install
+$ sudo modprobe -a 8812au
 ```
 
 To use dkms install:
 
-``` sh
+``` 
 $ sudo make -f Makefile.dkms install
 ```
 
 ### Additional Info
 You may have to install additional packages to complete the build:
-``` sh
+``` 
 $ sudo apt-get install build-essential
 $ sudo apt-get install linux-headers-4.4.0-67-generic #Change "4.4.0-67" to your desired kernel version
 ```
