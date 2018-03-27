@@ -19,11 +19,11 @@ From driver's device USB ID list and independent testers:
 | 		  		 | Sitecom Edimax	| ZyXEL *		 |  WD Cybertan 	  | BrosTrend Long Range 1200Mbps     
 
 
-## Enviroments Succesfully Tested
-* Ubuntu 14.04 and 16.04
+## Enviroments Successfully Tested
+* Ubuntu 14.04, 16.04 and 17.10
 * Fedora 25
 * Kernels
-	* 3.16.x to 4.12.x
+	* 3.16.x to 4.13.x
 	* AMD ROCm Linux Kernel: 4.11.0-kfd-compute-rocm-rel-1.6-148
 
 
